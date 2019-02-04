@@ -1,6 +1,4 @@
 const Annotation = require("./Annotation");
-// * @annotation [{descriptor}|=| ] [value]
-const annotationRegex = /(?:\s?\*\s?)(@\w+)(({\w*})(?:\s))?(\S+)/g;
 
 const commentOpen = '/**';
 const commentClose = '*/\n';
@@ -52,7 +50,7 @@ module.exports = class DocBlock {
   set comment(text){
     if(this[this._].comment === ''){
       this[this._].comment = text;
-      let annotationMatches = text.match(annotationRegex);
+      let annotationMatches = text.match(Annotation.REGEX);
       if(annotationMatches){
         for (let expression of annotationMatches){
           this.addAnnotation(expression);

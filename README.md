@@ -1,6 +1,6 @@
 The annotations library is a tool which allows you to generate metadata about a javascript class from the 
 annotations in the class, methods, and property comments. 
-This can be useful for things such as, automatic validation, controller routing, dependency injection, and much much more.
+This can be useful for things such as, automatic validation, controller routing, dependency injection, testing, and much much more.
 
 Comments must use the following format to be scanned
 

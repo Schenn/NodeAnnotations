@@ -6,12 +6,14 @@ const assert = require("assert");
 let metaTest = new Metadata();
 let mock = new Mock();
 
-let controllerMockPath = path.join(process.cwd(), "tests/mocks/Mock.js");
+let mockClassPath = path.join(process.cwd(), "tests/mocks/Mock.js");
 
 /**
  * Tests MetaData, DocBlock and Annotations
+ *
+ * Parse a mock class and once its ready, run the asserts.
  */
-metaTest.parseFile(controllerMockPath, ()=>{
+metaTest.parseFile(mockClassPath, ()=>{
 
   assert.strictEqual(metaTest.methods.length, 3);
 
@@ -19,7 +21,8 @@ metaTest.parseFile(controllerMockPath, ()=>{
     let docblock = metaTest.forMethod(method);
 
     // assert we get annotations for annotated methods
-    // mock class has "test" annotation, value ="foo"
+    // mock class has "test" annotation with a value of "foo"
+    //  @test foo
     assert.strictEqual(docblock.getAnnotation("test").value, "foo");
 
     // assert the method exists on the target.
@@ -30,17 +33,12 @@ metaTest.parseFile(controllerMockPath, ()=>{
     let propData = metaTest.forProperty(prop);
     assert.ok(propData.docblock.hasAnnotation("test"));
 
-    if(prop === "readOnlyProperty"){
-      assert.ok(propData.readOnly);
-      // Read only prop doesn't change if you try to set it.
-      mock[prop] = "test";
-      assert.strictEqual(mock[prop], 'foo');
-    } else {
-      mock[prop] = "test";
-      assert.strictEqual(mock[prop], "test");
-    }
-
+    mock[prop] = "test";
+    let expects = (prop === "readOnlyProperty" && propData.readOnly) ?
+        'foo' : 'test';
+    // In our mocks, only the "readOnlyProperty" property is read only.
+    assert.ok(propData.readOnly === (prop === "readOnlyProperty"));
+    assert.strictEqual(mock[prop], expects);
   }
-
 });
 

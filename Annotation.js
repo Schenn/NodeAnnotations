@@ -16,6 +16,10 @@ module.exports = class Annotation {
     this.nodes = this.phrase.split(" ");
   }
 
+  static get REGEX(){
+    return phraseRegex;
+  }
+
   /**
    * The name of the annotation
    *
