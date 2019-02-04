@@ -1,25 +1,73 @@
 const Annotation = require("./Annotation");
 // * @annotation [{descriptor}|=| ] [value]
-const annotationRegex = /(?:\s?\*\s?)(@\w+)(?:\s*=\s*|\s)?(({\w*})(?:\s))?(\S+)/g;
+const annotationRegex = /(?:\s?\*\s?)(@\w+)(({\w*})(?:\s))?(\S+)/g;
 
 const commentOpen = '/**';
 const commentClose = '*/\n';
 
+/**
+ * DocBlock represents a comment node and parses the annotations from the comment into Annotation objects.
+ *
+ * @type {module.DocBlock}
+ */
 module.exports = class DocBlock {
 
   constructor(){
-    this.annotations = {};
-    this.comment = '';
+    this._ = Symbol("DocBlock");
+    this[this._] = {
+      annotations: {},
+      comment:''
+    };
   }
 
+  /**
+   * The string used to identify an opening comment
+   * @return {string}
+   */
   static get commentOpen(){
     return commentOpen;
   }
 
+  /**
+   * The string used to identify a closing comment
+   * @return {string}
+   */
   static get commentClose(){
     return commentClose;
   }
 
+  /**
+   * Get the full text of the comment node
+   * @return {string}
+   */
+  get comment(){
+    return this[this._].comment;
+  }
+
+  /**
+   * Set the comment string and extract any annotations within.
+   *  Can only be set once
+   * @param {string} text
+   */
+  set comment(text){
+    if(this[this._].comment === ''){
+      this[this._].comment = text;
+      let annotationMatches = text.match(annotationRegex);
+      if(annotationMatches){
+        for (let expression of annotationMatches){
+          this.addAnnotation(expression);
+        }
+      }
+    }
+  }
+
+  /**
+   * Memoize the comment block which starts at a given index
+   *
+   * @param {string} fileContent
+   * @param {int} index
+   * @return {number} Where the comment ends.
+   */
   fromIndex(fileContent, index){
     let commentIndexStart = fileContent.indexOf(commentOpen, index);
     // If there's no docblock, there's nothing to collect.
@@ -28,39 +76,57 @@ module.exports = class DocBlock {
     }
 
     let commentEnd = fileContent.indexOf(commentClose, commentIndexStart) + commentClose.length;
-    let text = fileContent.substring(commentIndexStart, commentEnd);
-    this.comment = text;
-    let annotationMatches = text.match(annotationRegex);
-    if(annotationMatches){
-      for (let expression of annotationMatches){
-        this.addAnnotation(expression);
-      }
-    }
+    this.comment = fileContent.substring(commentIndexStart, commentEnd);
+
     return commentEnd;
   }
 
+  /**
+   * If there are any annotations in this docblock.
+   *
+   * @return {boolean}
+   */
   hasAnnotations(){
-    return Object.keys(this.annotations).length > 0;
+    return Object.keys(this[this._].annotations).length > 0;
   }
 
+  /**
+   * Does the docblock have a specific annotation.
+   *
+   * @param {string} annotation
+   * @return {boolean}
+   */
   hasAnnotation(annotation){
-    return typeof this.annotations[annotation] !== "undefined";
+    return typeof this[this._].annotations[annotation] !== "undefined";
   }
 
+  /**
+   * Memoize an annotation from a slice of the comment.
+   *  If there is already an annotation with a matching name (like param),
+   *    then the internal reference is changed to an array and the current and
+   *    new annotations are added to it.
+   * @param {string} expression
+   */
   addAnnotation(expression){
     let annotation = new Annotation(expression.trim());
-    if(typeof this.annotations[annotation.name] === "undefined"){
-      this.annotations[annotation.name] = annotation;
-    } else if(this.annotations[annotation.name] instanceof Array) {
-      this.annotations[annotation.name].push(annotation);
+    if(typeof this[this._].annotations[annotation.name] === "undefined"){
+      this[this._].annotations[annotation.name] = annotation;
+    } else if(this[this._].annotations[annotation.name] instanceof Array) {
+      this[this._].annotations[annotation.name].push(annotation);
     } else {
-      let temp = this.annotations[annotation.name];
-      this.annotations[annotation.name] = [temp];
-      this.annotations[annotation.name].push(annotation);
+      let temp = this[this._].annotations[annotation.name];
+      this[this._].annotations[annotation.name] = [temp];
+      this[this._].annotations[annotation.name].push(annotation);
     }
   }
 
+  /**
+   * Get the annotation object(s) for a given name
+   *
+   * @param {string} annotation
+   * @return {Annotation}
+   */
   getAnnotation(annotation){
-    return this.annotations[annotation];
+    return this[this._].annotations[annotation];
   }
 };

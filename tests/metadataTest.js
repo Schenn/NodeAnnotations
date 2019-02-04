@@ -8,6 +8,9 @@ let mock = new Mock();
 
 let controllerMockPath = path.join(process.cwd(), "tests/mocks/Mock.js");
 
+/**
+ * Tests MetaData, DocBlock and Annotations
+ */
 metaTest.parseFile(controllerMockPath, ()=>{
 
   assert.strictEqual(metaTest.methods.length, 3);

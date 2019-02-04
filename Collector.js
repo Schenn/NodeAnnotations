@@ -2,8 +2,14 @@ const fs = require("fs");
 const path = require("path");
 const Metadata = require("./Metadata");
 
+// Does the phrase end in .js
 const isJsFile = /((\.js)$)/;
 
+/**
+ * The Collector parses directories and files and memoizes their details using the Metadata class.
+ *
+ * @type {module.Collector}
+ */
 module.exports = class Collector {
 
   constructor(){
@@ -14,19 +20,37 @@ module.exports = class Collector {
     };
   }
 
+  /**
+   * The namespaces (relative file paths) of the classes that were memoized.
+   *
+   * @return {string[]}
+   */
   get namespaces(){
     return Object.keys(this[this._].metadata);
   }
 
+  /**
+   * Get the metadata for a given namespace.
+   *
+   * @param {string} namespace
+   * @return {Metadata}
+   */
   classMetadata(namespace){
     return this[this._].metadata[namespace];
   }
 
+  /**
+   * Create a metadata for a given file.
+   *
+   * @param {string} fullPath
+   * @param {function} cb
+   */
   collectFromFile(fullPath, cb){
     let namespace = fullPath.replace(process.cwd(), "").replace(".js", "");
     // file
     this[this._].metadata[namespace] = new Metadata();
     this[this._].metadata[namespace].parseFile(fullPath, ()=>{
+      // If this is the last file being parsed, trigger the callback.
       if(this[this._].fileCount < 0){
         cb();
       } else {
@@ -35,6 +59,13 @@ module.exports = class Collector {
     });
   }
 
+  /**
+   * Collect all the files from a directory (and any subdirectories).
+   *  Each file is then passed to collectFromFile which memoizes the class details in a Metadata class.
+   *
+   * @param {string} fullPath
+   * @param {function} cb
+   */
   collectFromPath(fullPath, cb){
     // Does the path point to a file or a directory?
     if(isJsFile.test(fullPath)){
@@ -45,7 +76,7 @@ module.exports = class Collector {
         if(err){
           console.log(err);
         }
-        // -1 for the currently parsed directory.
+        // -1 for managing offset.
         this[this._].fileCount += subpaths.length-1;
         for(let subpath of subpaths){
           this.collectFromPath(path.join(fullPath,subpath), cb);
@@ -53,5 +84,4 @@ module.exports = class Collector {
       });
     }
   }
-
 };
