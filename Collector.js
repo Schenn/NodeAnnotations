@@ -16,7 +16,8 @@ module.exports = class Collector {
     this._ = Symbol("Collector");
     this[this._] = {
       metadata:{},
-      fileCount:-1
+      fileCount:-1,
+      filePath:''
     };
   }
 
@@ -37,6 +38,14 @@ module.exports = class Collector {
    */
   classMetadata(namespace){
     return this[this._].metadata[namespace];
+  }
+
+  /**
+   * Get the filepath that this collector fetched from.
+   * @return {string}
+   */
+  get filePath(){
+    return this[this._].filePath;
   }
 
   /**
@@ -67,6 +76,9 @@ module.exports = class Collector {
    * @param {function} cb
    */
   collectFromPath(fullPath, cb){
+    if(this[this._].filePath ===''){
+      this[this._].filePath = fullPath;
+    }
     // Does the path point to a file or a directory?
     if(isJsFile.test(fullPath)){
       this.collectFromFile(fullPath, cb);
