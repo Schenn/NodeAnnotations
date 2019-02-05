@@ -15,7 +15,11 @@ let mockClassPath = path.join(process.cwd(), "tests/mocks/Mock.js");
  */
 metaTest.parseFile(mockClassPath, ()=>{
 
+  assert.strictEqual(metaTest.className, "Mock");
+  assert.ok(metaTest.classDoc);
+
   assert.strictEqual(metaTest.methods.length, 3);
+  assert.strictEqual(metaTest.propertyData.length, 2);
 
   for(let method of metaTest.methods){
     let docblock = metaTest.forMethod(method);
@@ -36,6 +40,7 @@ metaTest.parseFile(mockClassPath, ()=>{
     mock[prop] = "test";
     let expects = (prop === "readOnlyProperty" && propData.readOnly) ?
         'foo' : 'test';
+
     // In our mocks, only the "readOnlyProperty" property is read only.
     assert.ok(propData.readOnly === (prop === "readOnlyProperty"));
     assert.strictEqual(mock[prop], expects);

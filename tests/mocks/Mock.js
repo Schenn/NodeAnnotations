@@ -76,6 +76,7 @@ module.exports = class Mock {
    * @test foo
    * @param {string} foo
    * @param {int} bar
+   * @return {string | int}
    */
   doSomethingElse(foo, bar){
 

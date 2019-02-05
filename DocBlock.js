@@ -66,7 +66,7 @@ module.exports = class DocBlock {
    * @param {int} index
    * @return {number} Where the comment ends.
    */
-  fromIndex(fileContent, index){
+  fromIndex(fileContent, index=0){
     let commentIndexStart = fileContent.indexOf(commentOpen, index);
     // If there's no docblock, there's nothing to collect.
     if(commentIndexStart === -1) {

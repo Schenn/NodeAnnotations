@@ -131,28 +131,50 @@ module.exports = class Metadata {
    * @param {function} cb
    */
   parseContent(content, cb=null){
-    let classIndex = this.setClassFromContent(content);
     let index = 0;
     while(index > -1){
-      let comment = new DocBlock();
+      let docblock = new DocBlock();
+      let commentStart =content.indexOf(DocBlock.commentOpen, index);
       // If there's no comments in the content, break
-      if(content.indexOf(DocBlock.commentOpen, index) === -1){
+      if(commentStart === -1){
         break;
       }
-      index = comment.fromIndex(content, index);
 
-      if(comment.hasAnnotations()){
-        if(index > classIndex){
-          index = this.addMethodFromContent(index, content, comment);
-        } else {
-          this[this._].classDoc = comment;
-          // It's a Class comment. Continue looking for a method comment
-          index = nextComment(content, classIndex);
-        }
-      } else {
-        // no annotations, skip to the next docblock
-        index = nextComment(content, index);
+      let commentEnd = content.indexOf(DocBlock.commentClose, commentStart);
+      let nextBrace = content.indexOf("{", commentEnd);
+      // if there's no more opening braces, then there's no more methods, props, or class declarations
+      if(nextBrace === -1) {
+        break;
       }
+
+      docblock.comment = content.substring(commentStart, commentEnd);
+      if(!docblock.hasAnnotations()){
+        index=nextComment(content, commentEnd);
+        continue;
+      }
+
+      let regexPassed = true;
+      let commentIsFor = content.substring(commentEnd - DocBlock.commentClose.length, nextBrace+1);
+
+      // add the docblock to the appropriate container
+      switch (true) {
+        case methodRegex.test(commentIsFor):
+          this.addMethodFromContent(commentIsFor, docblock);
+          break;
+        case propRegex.test(commentIsFor):
+          this.addPropFromPhrase(commentIsFor, docblock);
+          break;
+        case classRegex.test(commentIsFor):
+          this.setClassFromContent(commentIsFor, docblock);
+          break;
+        default:
+          regexPassed = false;
+          break;
+      }
+
+      index = (!regexPassed)?
+          nextComment(content, commentEnd):
+          nextComment(content, nextBrace); // start searching after the next closing brace.
     }
     if(typeof cb === "function"){
       cb(this);
@@ -163,18 +185,19 @@ module.exports = class Metadata {
    * Extracts the class information from a string.
    *  class name [extends othername]
    * @param {string} content
+   * @param {DocBlock} docblock
    * @return {number} The index in the text where the class string came from.
    */
-  setClassFromContent(content){
-    let classIndex = content.search(classRegex);
-    if(classIndex > -1){
-      let classData = content.match(classRegex)[0].match(/\w+/g);
+  setClassFromContent(content, docblock){
+    let classPhrase = content.match(classRegex);
+    if(classPhrase){
+      let classData = classPhrase[0].match(/\w+/g);
       this[this._].className = classData[1];
       this[this._].classExtends = (typeof classData[3] !== "undefined") ? classData[3] : '';
+      this[this._].classDoc = docblock;
     } else {
       throw "Failed to find class to scan.";
     }
-    return classIndex;
   }
 
   /**
@@ -187,31 +210,18 @@ module.exports = class Metadata {
    * else
    *   returns the index of the next docblock
    *
-   * @param {int} index
-   * @param {string} content
+   * @param {string} phrase
    * @param {DocBlock} comment
    * @return {int}
    */
-  addMethodFromContent(index, content, comment){
-    // Use the comment close as a part of the method regex test.
-    // Essentially, checks to see if the method is right after the comment and not many lines later.
-    index -= DocBlock.commentClose.length;
-    let nextBrace = content.indexOf("{", index);
-    // if the last method contains a semi-passable phrase
-    if(nextBrace === -1) {
-      return -1;
-    }
+  addMethodFromContent(phrase, comment){
     // If it is not a function/method comment, then skip it. Not the purpose of this tool.
-    let phrase = content.substring(index, nextBrace+1);
     if(methodRegex.test(phrase)){
       // its a method for the comment! Cut the closing tag.
       phrase = phrase.replace(DocBlock.commentClose, '').trim();
       let method = phrase.substring(0, phrase.indexOf("(")).trim();
       this[this._].methods[method] = comment;
-    } else if(propRegex.test(phrase)){
-      this.addPropFromPhrase(index, phrase, comment);
     }
-    return nextComment(content, index + phrase.length);
   }
 
   /**
@@ -220,14 +230,12 @@ module.exports = class Metadata {
    *    e.g. If there is no setter for the property, the property is marked as 'readOnly' for your reference.
    *    It does not use an annotation to do this to prevent overwriting any of the properties annotations.
    *
-   * @param {int} index
    * @param {string} phrase
    * @param {DocBlock} docblock
    */
-  addPropFromPhrase(index, phrase, docblock){
+  addPropFromPhrase(phrase, docblock){
     // cut phrase down to get|set property
-    let prop = phrase.substring(phrase.indexOf("et ")-1, phrase.indexOf("(")).
-        trim().split(" ");
+    let prop = phrase.substring(phrase.indexOf("et ")-1, phrase.indexOf("(")).trim().split(" ");
 
     // if prop doesn't already exist in prop list
     if(typeof this[this._].propertyData[prop[1]] === "undefined"){
