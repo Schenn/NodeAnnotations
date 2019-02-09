@@ -1,5 +1,6 @@
 const fs = require("fs");
 const DocBlock = require("./DocBlock");
+const { createRequireFromPath } = require("module");
 
 // class {name} [extends name]
 const classRegex = /((class\s[A-z]+\s?)(?:\sextends\s[A-z]+\s)?){$/gm;
@@ -17,7 +18,7 @@ const nextComment = (fileContent, from)=>{
  * Metadata memoizes the details for a given class
  *  such as the filename, the class name, what class the given class extends from,
  *    what methods and what properties the class has.
- * @type {module.Metadata}
+ * @type {Metadata}
  */
 module.exports = class Metadata {
   constructor(){
@@ -83,6 +84,19 @@ module.exports = class Metadata {
   }
 
   /**
+   * Get the associated class for this metadata object.
+   *  Does a 'require' against the associated class filename and returns the result.
+   *
+   * All arguments are passed to target class constructor
+   *
+   * @return {*}
+   */
+  getInstance(){
+    let target = require(this.fileName);
+    return new target(...arguments);
+  }
+
+  /**
    * Get the docblock for a memoized method.
    * @param {string} method
    * @return {DocBlock}
@@ -110,7 +124,7 @@ module.exports = class Metadata {
    * @param {function} cb
    */
   parseFile(fullPath, cb){
-    this[this._].fileName = fullPath.replace(process.cwd(), "");
+    this[this._].fileName = fullPath.replace(`${process.cwd()}/`, "");
     fs.readFile(fullPath,'utf8', (err, fileContent)=>{
       if(err){
         console.log(err);
@@ -133,8 +147,7 @@ module.exports = class Metadata {
   parseContent(content, cb=null){
     let index = 0;
     while(index > -1){
-      let docblock = new DocBlock();
-      let commentStart =content.indexOf(DocBlock.commentOpen, index);
+      let commentStart = content.indexOf(DocBlock.commentOpen, index);
       // If there's no comments in the content, break
       if(commentStart === -1){
         break;
@@ -147,6 +160,7 @@ module.exports = class Metadata {
         break;
       }
 
+      let docblock = new DocBlock();
       docblock.comment = content.substring(commentStart, commentEnd);
       if(!docblock.hasAnnotations()){
         index=nextComment(content, commentEnd);
@@ -186,7 +200,6 @@ module.exports = class Metadata {
    *  class name [extends othername]
    * @param {string} content
    * @param {DocBlock} docblock
-   * @return {number} The index in the text where the class string came from.
    */
   setClassFromContent(content, docblock){
     let classPhrase = content.match(classRegex);
@@ -212,7 +225,6 @@ module.exports = class Metadata {
    *
    * @param {string} phrase
    * @param {DocBlock} comment
-   * @return {int}
    */
   addMethodFromContent(phrase, comment){
     // If it is not a function/method comment, then skip it. Not the purpose of this tool.

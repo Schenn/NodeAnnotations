@@ -3,12 +3,12 @@ const path = require("path");
 const Metadata = require("./Metadata");
 
 // Does the phrase end in .js
-const isJsFile = /((\.js)$)/;
+const isJsFile = /(\.js)$/;
 
 /**
  * The Collector parses directories and files and memoizes their details using the Metadata class.
  *
- * @type {module.Collector}
+ * @type {Collector}
  */
 module.exports = class Collector {
 
@@ -66,15 +66,13 @@ module.exports = class Collector {
     return this[this._].metadata[namespace];
   }
 
-
-
   /**
    * Create a metadata for a given file.
    *
    * @param {string} fullPath
    */
   collectFromFile(fullPath){
-    let namespace = fullPath.replace(process.cwd(), "").replace(".js", "");
+    let namespace = fullPath.replace(this.filePath, "").replace(".js", "");
     // file
     this[this._].metadata[namespace] = new Metadata();
     this[this._].metadata[namespace].parseFile(fullPath, ()=>{
