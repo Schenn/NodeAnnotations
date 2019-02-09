@@ -21,6 +21,8 @@ metaTest.parseFile(mockClassPath, ()=>{
   assert.strictEqual(metaTest.methods.length, 3);
   assert.strictEqual(metaTest.propertyData.length, 2);
 
+  assert.ok(metaTest.getInstance() instanceof Mock);
+
   for(let method of metaTest.methods){
     let docblock = metaTest.forMethod(method);
 
