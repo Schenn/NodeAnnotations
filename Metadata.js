@@ -200,7 +200,6 @@ module.exports = class Metadata {
    *  class name [extends othername]
    * @param {string} content
    * @param {DocBlock} docblock
-   * @return {number} The index in the text where the class string came from.
    */
   setClassFromContent(content, docblock){
     let classPhrase = content.match(classRegex);
@@ -226,7 +225,6 @@ module.exports = class Metadata {
    *
    * @param {string} phrase
    * @param {DocBlock} comment
-   * @return {int}
    */
   addMethodFromContent(phrase, comment){
     // If it is not a function/method comment, then skip it. Not the purpose of this tool.
