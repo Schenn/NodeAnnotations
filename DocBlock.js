@@ -108,14 +108,9 @@ module.exports = class DocBlock {
   addAnnotation(expression){
     let annotation = new Annotation(expression.trim());
     if(typeof this[_].annotations[annotation.name] === "undefined"){
-      this[_].annotations[annotation.name] = annotation;
-    } else if(this[_].annotations[annotation.name] instanceof Array) {
-      this[_].annotations[annotation.name].push(annotation);
-    } else {
-      let temp = this[_].annotations[annotation.name];
-      this[_].annotations[annotation.name] = [temp];
-      this[_].annotations[annotation.name].push(annotation);
+      this[_].annotations[annotation.name] = [];
     }
+    this[_].annotations[annotation.name].push(annotation);
   }
 
   /**
