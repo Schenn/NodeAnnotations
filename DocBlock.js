@@ -1,4 +1,5 @@
 const Annotation = require("./Annotation");
+const _ = Symbol("private");
 
 const commentOpen = '/**';
 const commentClose = '*/\n';
@@ -6,13 +7,12 @@ const commentClose = '*/\n';
 /**
  * DocBlock represents a comment node and parses the annotations from the comment into Annotation objects.
  *
- * @type {module.DocBlock}
+ * @type {DocBlock}
  */
 module.exports = class DocBlock {
 
   constructor(){
-    this._ = Symbol("DocBlock");
-    this[this._] = {
+    this[_] = {
       annotations: {},
       comment:''
     };
@@ -39,7 +39,7 @@ module.exports = class DocBlock {
    * @return {string}
    */
   get comment(){
-    return this[this._].comment;
+    return this[_].comment;
   }
 
   /**
@@ -48,8 +48,8 @@ module.exports = class DocBlock {
    * @param {string} text
    */
   set comment(text){
-    if(this[this._].comment === ''){
-      this[this._].comment = text;
+    if(this[_].comment === ''){
+      this[_].comment = text;
       let annotationMatches = text.match(Annotation.REGEX);
       if(annotationMatches){
         for (let expression of annotationMatches){
@@ -85,7 +85,7 @@ module.exports = class DocBlock {
    * @return {boolean}
    */
   hasAnnotations(){
-    return Object.keys(this[this._].annotations).length > 0;
+    return Object.keys(this[_].annotations).length > 0;
   }
 
   /**
@@ -95,7 +95,7 @@ module.exports = class DocBlock {
    * @return {boolean}
    */
   hasAnnotation(annotation){
-    return typeof this[this._].annotations[annotation] !== "undefined";
+    return typeof this[_].annotations[annotation] !== "undefined";
   }
 
   /**
@@ -107,14 +107,14 @@ module.exports = class DocBlock {
    */
   addAnnotation(expression){
     let annotation = new Annotation(expression.trim());
-    if(typeof this[this._].annotations[annotation.name] === "undefined"){
-      this[this._].annotations[annotation.name] = annotation;
-    } else if(this[this._].annotations[annotation.name] instanceof Array) {
-      this[this._].annotations[annotation.name].push(annotation);
+    if(typeof this[_].annotations[annotation.name] === "undefined"){
+      this[_].annotations[annotation.name] = annotation;
+    } else if(this[_].annotations[annotation.name] instanceof Array) {
+      this[_].annotations[annotation.name].push(annotation);
     } else {
-      let temp = this[this._].annotations[annotation.name];
-      this[this._].annotations[annotation.name] = [temp];
-      this[this._].annotations[annotation.name].push(annotation);
+      let temp = this[_].annotations[annotation.name];
+      this[_].annotations[annotation.name] = [temp];
+      this[_].annotations[annotation.name].push(annotation);
     }
   }
 
@@ -125,6 +125,6 @@ module.exports = class DocBlock {
    * @return {Annotation}
    */
   getAnnotation(annotation){
-    return this[this._].annotations[annotation];
+    return this[_].annotations[annotation];
   }
 };

@@ -1,6 +1,7 @@
 const fs = require("fs");
 const DocBlock = require("./DocBlock");
 const { createRequireFromPath } = require("module");
+const _ = Symbol("private");
 
 // class {name} [extends name]
 const classRegex = /((class\s[A-z]+\s?)(?:\sextends\s[A-z]+\s)?){$/gm;
@@ -22,8 +23,7 @@ const nextComment = (fileContent, from)=>{
  */
 module.exports = class Metadata {
   constructor(){
-    this._ = Symbol("metadata");
-    this[this._] = {
+    this[_] = {
       fileName: "",
       className: "",
       classExtends: "",
@@ -38,7 +38,7 @@ module.exports = class Metadata {
    * @return {string}
    */
   get fileName(){
-    return this[this._].fileName;
+    return this[_].fileName;
   }
 
   /**
@@ -46,7 +46,7 @@ module.exports = class Metadata {
    * @return {string}
    */
   get className(){
-    return this[this._].className;
+    return this[_].className;
   }
 
   /**
@@ -54,7 +54,7 @@ module.exports = class Metadata {
    * @return {string}
    */
   get extends(){
-    return this[this._].extends;
+    return this[_].extends;
   }
 
   /**
@@ -63,7 +63,7 @@ module.exports = class Metadata {
    * @return {DocBlock}
    */
   get classDoc(){
-    return this[this._].classDoc;
+    return this[_].classDoc;
   }
 
   /**
@@ -72,7 +72,7 @@ module.exports = class Metadata {
    * @return {string[]}
    */
   get methods(){
-    return Object.keys(this[this._].methods);
+    return Object.keys(this[_].methods);
   }
 
   /**
@@ -80,7 +80,7 @@ module.exports = class Metadata {
    * @return {string[]}
    */
   get propertyData(){
-    return Object.keys(this[this._].propertyData);
+    return Object.keys(this[_].propertyData);
   }
 
   /**
@@ -102,7 +102,7 @@ module.exports = class Metadata {
    * @return {DocBlock}
    */
   forMethod(method){
-    return this[this._].methods[method];
+    return this[_].methods[method];
   }
 
   /**
@@ -114,7 +114,7 @@ module.exports = class Metadata {
    * @return {object}
    */
   forProperty(prop){
-    return this[this._].propertyData[prop];
+    return this[_].propertyData[prop];
   }
 
   /**
@@ -124,7 +124,7 @@ module.exports = class Metadata {
    * @param {function} cb
    */
   parseFile(fullPath, cb){
-    this[this._].fileName = fullPath.replace(`${process.cwd()}/`, "");
+    this[_].fileName = fullPath.replace(`${process.cwd()}/`, "");
     fs.readFile(fullPath,'utf8', (err, fileContent)=>{
       if(err){
         console.log(err);
@@ -205,9 +205,9 @@ module.exports = class Metadata {
     let classPhrase = content.match(classRegex);
     if(classPhrase){
       let classData = classPhrase[0].match(/\w+/g);
-      this[this._].className = classData[1];
-      this[this._].classExtends = (typeof classData[3] !== "undefined") ? classData[3] : '';
-      this[this._].classDoc = docblock;
+      this[_].className = classData[1];
+      this[_].classExtends = (typeof classData[3] !== "undefined") ? classData[3] : '';
+      this[_].classDoc = docblock;
     } else {
       throw "Failed to find class to scan.";
     }
@@ -232,7 +232,7 @@ module.exports = class Metadata {
       // its a method for the comment! Cut the closing tag.
       phrase = phrase.replace(DocBlock.commentClose, '').trim();
       let method = phrase.substring(0, phrase.indexOf("(")).trim();
-      this[this._].methods[method] = comment;
+      this[_].methods[method] = comment;
     }
   }
 
@@ -250,14 +250,14 @@ module.exports = class Metadata {
     let prop = phrase.substring(phrase.indexOf("et ")-1, phrase.indexOf("(")).trim().split(" ");
 
     // if prop doesn't already exist in prop list
-    if(typeof this[this._].propertyData[prop[1]] === "undefined"){
-      this[this._].propertyData[prop[1]] = {
+    if(typeof this[_].propertyData[prop[1]] === "undefined"){
+      this[_].propertyData[prop[1]] = {
         docblock:docblock,
         readOnly:(prop[0] === "get") // if the property method is a get, set readOnly true. If its a set, set readOnly to false.
       };
     } else if(prop[0] === "set"){
       // If the property exists and a setter is found, update the readonly property to false
-      this[this._].propertyData[prop[1]].readOnly = false;
+      this[_].propertyData[prop[1]].readOnly = false;
     }
   }
 };

@@ -4,6 +4,7 @@ const Metadata = require("./Metadata");
 
 // Does the phrase end in .js
 const isJsFile = /(\.js)$/;
+const _ = Symbol("private");
 
 /**
  * The Collector parses directories and files and memoizes their details using the Metadata class.
@@ -13,8 +14,7 @@ const isJsFile = /(\.js)$/;
 module.exports = class Collector {
 
   constructor(){
-    this._ = Symbol("Collector");
-    this[this._] = {
+    this[_] = {
       metadata:{},
       fileCount:-1,
       filePath:'',
@@ -29,7 +29,7 @@ module.exports = class Collector {
    * @return {string[]}
    */
   get namespaces(){
-    return Object.keys(this[this._].metadata);
+    return Object.keys(this[_].metadata);
   }
 
   /**
@@ -37,7 +37,7 @@ module.exports = class Collector {
    * @return {string}
    */
   get filePath(){
-    return this[this._].filePath;
+    return this[_].filePath;
   }
 
   /**
@@ -45,7 +45,7 @@ module.exports = class Collector {
    * @param {function} cb
    */
   set onFileParsed(cb){
-    this[this._].onFileParsed = cb;
+    this[_].onFileParsed = cb;
   }
 
   /**
@@ -53,7 +53,7 @@ module.exports = class Collector {
    * @param cb
    */
   set onComplete(cb){
-    this[this._].onComplete = cb;
+    this[_].onComplete = cb;
   }
 
   /**
@@ -63,7 +63,7 @@ module.exports = class Collector {
    * @return {Metadata}
    */
   classMetadata(namespace){
-    return this[this._].metadata[namespace];
+    return this[_].metadata[namespace];
   }
 
   /**
@@ -74,14 +74,14 @@ module.exports = class Collector {
   collectFromFile(fullPath){
     let namespace = fullPath.replace(this.filePath, "").replace(".js", "");
     // file
-    this[this._].metadata[namespace] = new Metadata();
-    this[this._].metadata[namespace].parseFile(fullPath, ()=>{
-      this[this._].onFileParsed(this[this._].metadata[namespace]);
+    this[_].metadata[namespace] = new Metadata();
+    this[_].metadata[namespace].parseFile(fullPath, ()=>{
+      this[_].onFileParsed(this[_].metadata[namespace], namespace);
       // If this is the last file being parsed, trigger the callback.
-      if(this[this._].fileCount < 0){
-        this[this._].onComplete();
+      if(this[_].fileCount < 0){
+        this[_].onComplete();
       } else {
-        this[this._].fileCount--;
+        this[_].fileCount--;
       }
     });
   }
@@ -93,8 +93,8 @@ module.exports = class Collector {
    * @param {string} fullPath
    */
   collectFromPath(fullPath){
-    if(this[this._].filePath ===''){
-      this[this._].filePath = fullPath;
+    if(this[_].filePath ===''){
+      this[_].filePath = fullPath;
     }
     // Does the path point to a file or a directory?
     if(isJsFile.test(fullPath)){
@@ -106,7 +106,7 @@ module.exports = class Collector {
           console.log(err);
         }
         // -1 for managing offset.
-        this[this._].fileCount += subpaths.length-1;
+        this[_].fileCount += subpaths.length-1;
         for(let subpath of subpaths){
           this.collectFromPath(path.join(fullPath,subpath));
         }

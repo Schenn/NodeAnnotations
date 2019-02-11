@@ -1,6 +1,8 @@
 // \s*\s@word[\s{typeInfo}][\sword]
 const phraseRegex = /(?:\s?\*\s?)(@\w+\s?)(({.+})?\s?(\w+)?)?/g;
 
+const _ = Symbol("private");
+
 /**
  * Annotation wraps the individual elements of an annotation string.
  *  An annotation string looks like
@@ -8,8 +10,7 @@ const phraseRegex = /(?:\s?\*\s?)(@\w+\s?)(({.+})?\s?(\w+)?)?/g;
  */
 module.exports = class Annotation {
   constructor(expression){
-    this._ = Symbol("Annotation");
-    this[this._] = {
+    this[_] = {
       // Drop the comment star, the annotation @ symbol and any remaining whitespace at the beginning of the phrase.
       phrase: expression.match(phraseRegex)[0].replace("*", "").trim(),
       nodes: {
@@ -20,15 +21,15 @@ module.exports = class Annotation {
     };
 
     // Extract the annotation from the string.
-    let typeMatch = this[this._].phrase.match(/({.+})/);
-    let value = this[this._].phrase.replace(this[this._].nodes.name, '');
+    let typeMatch = this[_].phrase.match(/({.+})/);
+    let value = this[_].phrase.replace(this[_].nodes.name, '');
     if(typeMatch){
       value = value.replace(typeMatch[0], '').trim();
     }
 
-    this[this._].nodes.name = this[this._].nodes.name.replace("@", "");
-    this[this._].nodes.type = (typeMatch) ? typeMatch[0].replace("{", '').replace("}", '') : '';
-    this[this._].nodes.value = value.trim();
+    this[_].nodes.name = this[_].nodes.name.replace("@", "");
+    this[_].nodes.type = (typeMatch) ? typeMatch[0].replace("{", '').replace("}", '') : '';
+    this[_].nodes.value = value.trim();
   }
 
   /**
@@ -40,7 +41,7 @@ module.exports = class Annotation {
   }
 
   get phrase(){
-    return this[this._].phrase;
+    return this[_].phrase;
   }
 
   /**
@@ -49,7 +50,7 @@ module.exports = class Annotation {
    * @return {string}
    */
   get name(){
-    return this[this._].nodes.name;
+    return this[_].nodes.name;
   }
 
   /**
@@ -58,7 +59,7 @@ module.exports = class Annotation {
    * @return {string}
    */
   get type(){
-    return this[this._].nodes.type;
+    return this[_].nodes.type;
   }
 
   /**
@@ -68,6 +69,6 @@ module.exports = class Annotation {
    * @return {string}
    */
   get value(){
-    return this[this._].nodes.value;
+    return this[_].nodes.value;
   }
 };

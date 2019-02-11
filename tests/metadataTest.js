@@ -29,7 +29,7 @@ metaTest.parseFile(mockClassPath, ()=>{
     // assert we get annotations for annotated methods
     // mock class has "test" annotation with a value of "foo"
     //  @test foo
-    assert.strictEqual(docblock.getAnnotation("test").value, "foo");
+    assert.strictEqual(docblock.getAnnotation("test")[0].value, "foo");
 
     // assert the method exists on the target.
     assert.strictEqual(typeof mock[method], "function");
