@@ -68,15 +68,15 @@ module.exports = class DocBlock {
    */
   fromIndex(fileContent, index=0){
     let commentIndexStart = fileContent.indexOf(commentOpen, index);
+    let nextIndex = commentIndexStart;
     // If there's no docblock, there's nothing to collect.
-    if(commentIndexStart === -1) {
-      return commentIndexStart;
+    if(commentIndexStart !== -1) {
+      let commentEnd = fileContent.indexOf(commentClose, commentIndexStart) + commentClose.length;
+      this.comment = fileContent.substring(commentIndexStart, commentEnd);
+      nextIndex = commentEnd;
     }
 
-    let commentEnd = fileContent.indexOf(commentClose, commentIndexStart) + commentClose.length;
-    this.comment = fileContent.substring(commentIndexStart, commentEnd);
-
-    return commentEnd;
+    return nextIndex;
   }
 
   /**
