@@ -6,7 +6,7 @@ const assert = require("assert");
 let metaTest = new Metadata();
 let mock = new Mock();
 
-let mockClassPath = path.join(process.cwd(), "tests/mocks/Mock.js");
+let mockClassPath = path.join(process.cwd(), "mocks/Mock.js");
 
 /**
  * Tests MetaData, DocBlock and Annotations

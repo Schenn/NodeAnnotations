@@ -2,7 +2,7 @@ const path = require("path");
 const assert = require("assert");
 const Collector = require("../Collector");
 // path to the mock classes
-let mockPath = path.join(process.cwd(), "tests/mocks");
+let mockPath = path.join(process.cwd(), "mocks");
 
 let collector = new Collector();
 

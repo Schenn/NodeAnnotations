@@ -1,5 +1,5 @@
-// \s*\s@word[\s{typeInfo}][\sword]
-const phraseRegex = /(?:\s?\*\s?)(@\w+\s?)(({.+})?\s?(\w+)?)?/g;
+// \s*\s@word[\s{typeInfo}][\swordorcharacters]$
+const phraseRegex = /^(?:\s?\*\s?)(@\w+\s?)(({.+})?\s?(\S+$)?)?/gm;
 
 const _ = Symbol("private");
 
@@ -19,7 +19,7 @@ module.exports = class Annotation {
         value: ''
       }
     };
-
+    console.log(expression);
     // Extract the annotation from the string.
     let typeMatch = this[_].phrase.match(/({.+})/);
     let value = this[_].phrase.replace(this[_].nodes.name, '');
