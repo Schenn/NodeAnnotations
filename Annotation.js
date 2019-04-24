@@ -1,5 +1,5 @@
 // \s*\s@word[\s{typeInfo}][\swordorcharacters]$
-const phraseRegex = /^(?:\s?\*\s?)(@\w+\s?)(({.+})?\s?(\S+$)?)?/g;
+const phraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
 
 const _ = Symbol("private");
 
@@ -10,11 +10,12 @@ const _ = Symbol("private");
  */
 module.exports = class Annotation {
   constructor(expression){
+    let cleaned = expression.match(phraseRegex)[0].replace("*", "").trim();
     this[_] = {
       // Drop the comment star, the annotation @ symbol and any remaining whitespace at the beginning of the phrase.
-      phrase: expression.match(phraseRegex)[0].replace("*", "").trim(),
+      phrase: cleaned,
       nodes: {
-        name: expression.match(/(@\w+)/)[0],
+        name: cleaned.match(/(@\w+)/)[0],
         type: '',
         value: ''
       }
