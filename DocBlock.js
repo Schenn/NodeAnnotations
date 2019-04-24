@@ -1,4 +1,6 @@
 const Annotation = require("./Annotation");
+
+const phraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
 const _ = Symbol("private");
 
 const commentOpen = '/**';
@@ -50,7 +52,7 @@ module.exports = class DocBlock {
   set comment(text){
     if(this[_].comment === ''){
       this[_].comment = text;
-      let annotationMatches = text.match(Annotation.REGEX);
+      let annotationMatches = text.match(phraseRegex);
       if(annotationMatches){
         for (let expression of annotationMatches){
           this.addAnnotation(expression);
