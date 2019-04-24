@@ -1,5 +1,5 @@
 // \s*\s@word[\s{typeInfo}][\swordorcharacters]$
-const phraseRegex = /^(?:\s?\*\s?)(@\w+\s?)(({.+})?\s?(\S+$)?)?/gm;
+const phraseRegex = /^(?:\s?\*\s?)(@\w+\s?)(({.+})?\s?(\S+$)?)?/g;
 
 const _ = Symbol("private");
 
