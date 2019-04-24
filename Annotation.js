@@ -19,7 +19,6 @@ module.exports = class Annotation {
         value: ''
       }
     };
-    console.log(expression);
     // Extract the annotation from the string.
     let typeMatch = this[_].phrase.match(/({.+})/);
     let value = this[_].phrase.replace(this[_].nodes.name, '');
