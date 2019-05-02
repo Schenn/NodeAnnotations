@@ -121,17 +121,80 @@ module.exports = class Metadata {
    * Read a file and pass the content to parseContent.
    *    sets the file name
    * @param {string} fullPath
-   * @param {function} cb
+   * @return {Promise}
    */
-  parseFile(fullPath, cb){
+  parseFile(fullPath){
     this[_].fileName = fullPath.replace(`${process.cwd()}/`, "");
-    fs.readFile(fullPath,'utf8', (err, fileContent)=>{
-      if(err){
-        console.log(err);
-      }
-      this.parseContent(fileContent, cb);
+    return new Promise((resolve, reject)=>{
+      fs.readFile(fullPath,'utf8', (err, fileContent)=>{
+        if(err){
+          console.log(err);
+          reject(err);
+        }
+        this.parseContent(fileContent, (metadata)=>{
+          resolve(metadata);
+        });
+      });
     });
+
   }
+
+  /**
+   * Determine if we can create a doc block or not. If we can, return the positional data of marker characters.
+   * @param {string} content
+   * @param {number} index
+   * @return {boolean | Object}
+   */
+  canCreateDocBlock(content, index){
+    let result = false;
+    let commentStart = content.indexOf(DocBlock.commentOpen, index);
+    // If there's no comments in the content, break
+    if(commentStart !== -1){
+      let commentEnd = content.indexOf(DocBlock.commentClose, commentStart);
+      if(commentEnd === -1){
+        throw Error("Malformed file has an open comment but no closing comment marker.");
+      }
+      let nextBrace = content.indexOf("{", commentEnd);
+      // if there's no more opening braces, then there's nothing to interpret from the comment.
+      if(nextBrace !== -1) {
+        result = {
+          commentStart: commentStart,
+          commentEnd: commentEnd,
+          nextBrace: nextBrace
+        };
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Add a docblock to the metadata.
+   *  looks like: set prop(arg){, get prop(){, method(arg, arg){, class name {, class name extends name {,
+   *
+   * @param {string} contentLine
+   * @param {DocBlock} docblock
+   * @return {boolean}
+   */
+  addDocBlock(contentLine, docblock){
+    let regexPassed = true;
+    switch (true) {
+      case methodRegex.test(contentLine):
+        this.addMethodFromContent(contentLine, docblock);
+        break;
+      case propRegex.test(contentLine):
+        this.addPropFromPhrase(contentLine, docblock);
+        break;
+      case classRegex.test(contentLine):
+        this.setClassFromContent(contentLine, docblock);
+        break;
+      default:
+        regexPassed = false;
+        break;
+    }
+    return regexPassed;
+  }
+
 
   /**
    * Parse text which represents the text body of a class file.
@@ -147,48 +210,25 @@ module.exports = class Metadata {
   parseContent(content, cb=null){
     let index = 0;
     while(index > -1){
-      let commentStart = content.indexOf(DocBlock.commentOpen, index);
-      // If there's no comments in the content, break
-      if(commentStart === -1){
-        break;
-      }
-
-      let commentEnd = content.indexOf(DocBlock.commentClose, commentStart);
-      let nextBrace = content.indexOf("{", commentEnd);
-      // if there's no more opening braces, then there's no more methods, props, or class declarations
-      if(nextBrace === -1) {
+      let commentData = this.canCreateDocBlock(content, index);
+      if(!commentData){
         break;
       }
 
       let docblock = new DocBlock();
-      docblock.comment = content.substring(commentStart, commentEnd);
+      docblock.comment = content.substring(commentData.commentStart, commentData.commentEnd);
+      // If there are no annotations for the docblock, then drop it and go to the next position.
       if(!docblock.hasAnnotations()){
-        index=nextComment(content, commentEnd);
+        index=nextComment(content, commentData.commentEnd);
         continue;
       }
 
-      let regexPassed = true;
-      let commentIsFor = content.substring(commentEnd - DocBlock.commentClose.length, nextBrace+1);
+      let commentIsFor = content.substring(commentData.commentEnd - DocBlock.commentClose.length,
+        commentData.nextBrace+1);
 
-      // add the docblock to the appropriate container
-      switch (true) {
-        case methodRegex.test(commentIsFor):
-          this.addMethodFromContent(commentIsFor, docblock);
-          break;
-        case propRegex.test(commentIsFor):
-          this.addPropFromPhrase(commentIsFor, docblock);
-          break;
-        case classRegex.test(commentIsFor):
-          this.setClassFromContent(commentIsFor, docblock);
-          break;
-        default:
-          regexPassed = false;
-          break;
-      }
-
-      index = (!regexPassed)?
-          nextComment(content, commentEnd):
-          nextComment(content, nextBrace); // start searching after the next closing brace.
+      index = (!this.addDocBlock(commentIsFor, docblock))?
+          nextComment(content, commentData.commentEnd): // Look for the next docblock after the comment closing tag.
+          nextComment(content, commentData.nextBrace); // Look for the next opening brace.
     }
     if(typeof cb === "function"){
       cb(this);

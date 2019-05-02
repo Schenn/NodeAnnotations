@@ -13,8 +13,7 @@ let mockClassPath = path.join(process.cwd(), "mocks/Mock.js");
  *
  * Parse a mock class and once its ready, run the asserts.
  */
-metaTest.parseFile(mockClassPath, ()=>{
-
+metaTest.parseFile(mockClassPath).then(()=>{
   assert.strictEqual("Mock", metaTest.className);
   assert.ok(metaTest.classDoc);
 

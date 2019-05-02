@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const Metadata = require("./Metadata");
+const EventEmitter = require('events');
 
 // Does the phrase end in .js
 const isJsFile = /(\.js)$/;
@@ -11,15 +12,14 @@ const _ = Symbol("private");
  *
  * @type {Collector}
  */
-module.exports = class Collector {
+module.exports = class Collector extends EventEmitter {
 
   constructor(){
+    super();
     this[_] = {
       metadata:{},
       fileCount:-1,
       filePath:'',
-      onFileParsed: (metadata)=>{},
-      onComplete: ()=>{}
     };
   }
 
@@ -33,6 +33,19 @@ module.exports = class Collector {
   }
 
   /**
+   * For looping/mapping
+   *
+   * @return {*|metadata|{}}
+   */
+  get metadata(){
+    return this[_].metadata;
+  }
+
+  set filePath(filepath){
+    this[_].filePath = filepath;
+  }
+
+  /**
    * Get the filepath that this collector fetched from.
    * @return {string}
    */
@@ -40,21 +53,6 @@ module.exports = class Collector {
     return this[_].filePath;
   }
 
-  /**
-   * Callback to trigger whenever any file is finished parsing.
-   * @param {function} cb
-   */
-  set onFileParsed(cb){
-    this[_].onFileParsed = cb;
-  }
-
-  /**
-   * Callback to trigger when all the requested files are finished parsing.
-   * @param cb
-   */
-  set onComplete(cb){
-    this[_].onComplete = cb;
-  }
 
   /**
    * Get the metadata for a given namespace.
@@ -71,19 +69,18 @@ module.exports = class Collector {
    *
    * @param {string} fullPath
    */
-  collectFromFile(fullPath){
+  async collectFromFile(fullPath, onComplete){
     let namespace = fullPath.replace(this.filePath, "").replace(".js", "");
     // file
     this[_].metadata[namespace] = new Metadata();
-    this[_].metadata[namespace].parseFile(fullPath, ()=>{
-      this[_].onFileParsed(this[_].metadata[namespace], namespace);
-      // If this is the last file being parsed, trigger the callback.
-      if(this[_].fileCount < 0){
-        this[_].onComplete();
-      } else {
-        this[_].fileCount--;
-      }
-    });
+    let metadata = await this[_].metadata[namespace].parseFile(fullPath);
+    this.emit("fileParsed", metadata, namespace);
+    // If this is the last file being parsed, trigger the callback.
+    if(this[_].fileCount < 0){
+      onComplete();
+    } else {
+      this[_].fileCount--;
+    }
   }
 
   /**
@@ -92,25 +89,35 @@ module.exports = class Collector {
    *
    * @param {string} fullPath
    */
-  collectFromPath(fullPath){
+  collectFromPath(fullPath, onComplete, onError=(err)=>{console.log(err);}){
     if(this[_].filePath ===''){
       this[_].filePath = fullPath;
     }
     // Does the path point to a file or a directory?
     if(isJsFile.test(fullPath)){
-      this.collectFromFile(fullPath);
+      this.collectFromFile(fullPath, onComplete);
     } else {
       // directory
       fs.readdir(fullPath, (err, subpaths)=>{
         if(err){
-          console.log(err);
+          onError(err);
         }
         // -1 for managing offset.
         this[_].fileCount += subpaths.length-1;
         for(let subpath of subpaths){
-          this.collectFromPath(path.join(fullPath,subpath));
+          this.collectFromPath(path.join(fullPath,subpath), onComplete, onError);
         }
       });
     }
+  }
+
+  /**
+   * Start the collection process and get a promise
+   * @return {Promise<any>}
+   */
+  collect(){
+    return new Promise((resolve, reject)=>{
+      this.collectFromPath(this[_].filePath, resolve, reject);
+    });
   }
 };
