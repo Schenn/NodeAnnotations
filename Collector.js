@@ -18,7 +18,7 @@ module.exports = class Collector extends EventEmitter {
     super();
     this[_] = {
       metadata:{},
-      fileCount:-1,
+      fileCount:0,
       filePath:'',
     };
   }
@@ -69,18 +69,17 @@ module.exports = class Collector extends EventEmitter {
    *
    * @param {string} fullPath
    */
-  async collectFromFile(fullPath, onComplete){
+  collectFromFile(fullPath, onComplete){
     let namespace = fullPath.replace(this.filePath, "").replace(".js", "");
     // file
     this[_].metadata[namespace] = new Metadata();
-    let metadata = await this[_].metadata[namespace].parseFile(fullPath);
-    this.emit("fileParsed", metadata, namespace);
-    // If this is the last file being parsed, trigger the callback.
-    if(this[_].fileCount < 0){
-      onComplete();
-    } else {
-      this[_].fileCount--;
-    }
+    this[_].metadata[namespace].parseFile(fullPath).then((metadata)=>{
+      this.emit("fileParsed", metadata, namespace);
+      if(--this[_].fileCount <= 0){
+        onComplete();
+      }
+    });
+
   }
 
   /**
@@ -98,12 +97,15 @@ module.exports = class Collector extends EventEmitter {
       this.collectFromFile(fullPath, onComplete);
     } else {
       // directory
+      // decrement the fileCount for the current subpath, if this is a subpath and not the base.
+      if(this[_].fileCount !== 0){
+        this[_].fileCount--;
+      }
       fs.readdir(fullPath, (err, subpaths)=>{
         if(err){
           onError(err);
         }
-        // -1 for managing offset.
-        this[_].fileCount += subpaths.length-1;
+        this[_].fileCount += subpaths.length;
         for(let subpath of subpaths){
           this.collectFromPath(path.join(fullPath,subpath), onComplete, onError);
         }
