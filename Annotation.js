@@ -9,16 +9,25 @@ const _ = Symbol("private");
  * @type {module.Annotation}
  */
 module.exports = class Annotation {
-  constructor(expression){
+  constructor(expression = ''){
+
     this[_] = {
       // Drop the comment star, the annotation @ symbol and any remaining whitespace at the beginning of the phrase.
-      phrase: expression.match(phraseRegex)[0].replace("*", "").trim(),
+      phrase: '',
       nodes: {
-        name: expression.match(/(@\w+)/)[0],
+        name: '',
         type: '',
         value: ''
       }
     };
+    if(expression !== ''){
+      this.fromExpression(expression);
+    }
+  }
+
+  fromExpression(expression){
+    this[_].phrase = expression.match(phraseRegex)[0].replace("*", "").trim();
+    this[_].nodes.name = expression.match(/(@\w+)/)[0];
     // Extract the annotation from the string.
     let typeMatch = this[_].phrase.match(/({.+})/);
     let value = this[_].phrase.replace(this[_].nodes.name, '');
@@ -29,6 +38,13 @@ module.exports = class Annotation {
     this[_].nodes.name = this[_].nodes.name.replace("@", "");
     this[_].nodes.type = (typeMatch) ? typeMatch[0].replace("{", '').replace("}", '') : '';
     this[_].nodes.value = value.trim();
+  }
+
+  fromValues(name, value=null, type=null){
+    this[_].phrase = `@${name}${type ? ` {${type}} `: ''}${value ? ` ${value}` : ''}`;
+    this[_].nodes.name = name;
+    this[_].nodes.value = value;
+    this[_].nodes.type = type;
   }
 
   /**

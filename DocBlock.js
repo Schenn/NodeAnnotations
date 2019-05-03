@@ -55,7 +55,7 @@ module.exports = class DocBlock {
       let annotationMatches = text.match(phraseRegex);
       if(annotationMatches){
         for (let expression of annotationMatches){
-          this.addAnnotation(expression);
+          this.annotationFromPhrase(expression);
         }
       }
     }
@@ -101,13 +101,30 @@ module.exports = class DocBlock {
   }
 
   /**
+   * Create an annotation from data instead of a phrase.
+   * Useful for memoizing system important data which the dev doesn't need to mark.
+   *
+   * @param {string} name
+   * @param {*} value
+   * @param {string} type
+   */
+  addAnnotation(name, value=null, type=null){
+    let annotation = new Annotation();
+    annotation.fromValues(name, value, type);
+    if(typeof this[_].annotations[annotation.name] === "undefined"){
+      this[_].annotations[annotation.name] = [];
+    }
+    this[_].annotations[annotation.name].push(annotation);
+  }
+
+  /**
    * Memoize an annotation from a slice of the comment.
    *  If there is already an annotation with a matching name (like param),
    *    then the internal reference is changed to an array and the current and
    *    new annotations are added to it.
    * @param {string} expression
    */
-  addAnnotation(expression){
+  annotationFromPhrase(expression){
     let annotation = new Annotation(expression.trim());
     if(typeof this[_].annotations[annotation.name] === "undefined"){
       this[_].annotations[annotation.name] = [];
