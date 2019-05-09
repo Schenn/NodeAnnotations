@@ -124,7 +124,7 @@ module.exports = class Metadata {
    * @return {Promise}
    */
   parseFile(fullPath){
-    this[_].fileName = fullPath.replace(`${process.cwd()}/`, "");
+    this[_].fileName = fullPath;
     return new Promise((resolve, reject)=>{
       fs.readFile(fullPath,'utf8', (err, fileContent)=>{
         if(err){

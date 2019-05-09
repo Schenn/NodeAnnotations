@@ -70,7 +70,7 @@ module.exports = class Collector extends EventEmitter {
    * @param {string} fullPath
    */
   collectFromFile(fullPath, onComplete){
-    let namespace = fullPath.replace(this.filePath, "").replace(".js", "");
+    let namespace = fullPath.replace(path.join(process.cwd(), this.filePath), "").replace(".js", "");
     // file
     this[_].metadata[namespace] = new Metadata();
     this[_].metadata[namespace].parseFile(fullPath).then((metadata)=>{
