@@ -45,8 +45,8 @@ function runTestLoop(count){
 let hrstart = process.hrtime();
 runTest();
 let hrend = process.hrtime(hrstart);
-console.info('Execution time (hr): %ds %dms', hrend[0], hrend[1] / 1000000);
+console.info('DocBlock tests Execution time (hr): %dms', hrend[1] / 1000000);
 
 runTestLoop(100);
 hrend = process.hrtime(hrstart);
-console.info('Execution time (hr): %ds %dms', hrend[0], hrend[1] / 1000000);
+console.info('100 Loop DocBlock tests Execution time (hr): %dms', hrend[1] / 1000000);

@@ -56,5 +56,5 @@ function collectorTest () {
 let hrstart = process.hrtime();
 collectorTest();
 let hrend = process.hrtime(hrstart);
-console.info('Execution time (hr): %ds %dms', hrend[0], hrend[1] / 1000000);
+console.info('Collector Test Execution time (hr): %dms', hrend[1] / 1000000);
 

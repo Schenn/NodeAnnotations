@@ -1,0 +1,29 @@
+{
+  "name": "nodeannotations",
+  "version": "1.0.0",
+  "description": "The annotations library is a tool which allows you to generate metadata about a javascript class from the  annotations in the class, methods, and property comments.  This can be useful for things such as, automatic validation, controller routing, dependency injection, testing, and much much more.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "cd ./tests/ && node ./AnnotationTest.js && node ./CollectorTest.js && node ./DocBlockTest.js && node ./MetaDataTest.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Schenn/NodeAnnotations.git"
+  },
+  "keywords": [
+    "Annotations",
+    "Comments",
+    "Class",
+    "Annotation",
+    "Reader"
+  ],
+  "author": "schenn@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Schenn/NodeAnnotations/issues"
+  },
+  "homepage": "https://github.com/Schenn/NodeAnnotations#readme"
+}
