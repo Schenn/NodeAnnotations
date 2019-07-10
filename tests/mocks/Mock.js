@@ -5,6 +5,7 @@ let privateProps = {
 };
 
 /**
+ * A class to validate the Node Annotations library against.
  *
  * @type {module.Mock}
  */
@@ -13,16 +14,18 @@ module.exports = class Mock {
   constructor(){
 
   }
-
+  // This will be skipped
   get foobar(){
 
   }
-
+  // This will be skipped
   set foobar(val){
 
   }
 
   /**
+   * This property will be memoized
+   *
    * @type {string}
    * @column
    * @test
@@ -32,6 +35,8 @@ module.exports = class Mock {
   }
 
   /**
+   * This property will be memoized
+   *
    * @type {string}
    * @column
    * @test
@@ -41,6 +46,8 @@ module.exports = class Mock {
   }
 
   /**
+   * This property will be memoized as read-only, unless a setter was found.
+   *
    * @type {string}
    * @test
    */
@@ -53,7 +60,7 @@ module.exports = class Mock {
   }
 
   /**
-   * adadadasdwasdasd
+   * This will be skipped
    *
    */
   doNothing(){
@@ -61,7 +68,7 @@ module.exports = class Mock {
   }
 
   /**
-   * dosafawfafaf
+   * This should be picked up
    *
    * @test foo
    * @bar
@@ -71,7 +78,7 @@ module.exports = class Mock {
   }
 
   /**
-   * adadadawdadad
+   * This should be picked up
    *
    * @test foo
    * @param {string} foo
@@ -79,19 +86,19 @@ module.exports = class Mock {
    * @return {string | int}
    */
   doSomethingElse(foo, bar){
-
+    return(foo ? 0 : '');
   }
 
   /**
-   * adadadadawdaw
+   * This should be picked up
    *
    * @test foo
-   * @param foo
+   * @param {string} foo
    */
   doAnotherThing(foo)
   {
     /**
-     * Fewafdafdafafafdad
+     * This should be ignored.
      * @see adadadwad
      */
     doThing();

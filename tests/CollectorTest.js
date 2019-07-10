@@ -13,7 +13,13 @@ let successTimeout = setTimeout(()=>{
   assert.fail("Collector callback never reached.");
 }, 2000);
 
+/**
+ * Validate the collector is able to pull the metadata for class files.
+ */
 function collectorTest () {
+  /**
+   * Set the event before collecting metadata.
+   */
   collector.on("fileParsed", (metadata, namespace)=>{
     assert.ok(++mockCount <= 3);
     assert.strictEqual(metadata.methods.length, 3);
@@ -32,12 +38,12 @@ function collectorTest () {
   collector.collect().then(()=>{
     // Validate that the callback is only called once
     assert.strictEqual(collector.namespaces.length, 3);
-
-    for(let name of collector.namespaces){
+    collector.namespaces.forEach((name)=>{
       let data = collector.classMetadata(name);
       assert.strictEqual(data.methods.length, 3);
       assert.strictEqual(data.propertyData.length, 2);
-    }
+    });
+
     if(mockCount === 3){
       clearTimeout(successTimeout);
     } else {
@@ -46,5 +52,9 @@ function collectorTest () {
   });
 
 }
-
+// Due to asynchronous testing, can't test this in a loop.
+let hrstart = process.hrtime();
 collectorTest();
+let hrend = process.hrtime(hrstart);
+console.info('Execution time (hr): %ds %dms', hrend[0], hrend[1] / 1000000);
+

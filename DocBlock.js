@@ -4,7 +4,7 @@ const phraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
 const _ = Symbol("private");
 
 const commentOpen = '/**';
-const commentClose = '*/\n';
+const commentClose = '*/';
 
 /**
  * DocBlock represents a comment node and parses the annotations from the comment into Annotation objects.
@@ -21,7 +21,7 @@ module.exports = class DocBlock {
   }
 
   /**
-   * The string used to identify an opening comment
+   * The string that is used to identify an opening comment
    * @return {string}
    */
   static get commentOpen(){
@@ -29,7 +29,7 @@ module.exports = class DocBlock {
   }
 
   /**
-   * The string used to identify a closing comment
+   * The string that is used to identify a closing comment
    * @return {string}
    */
   static get commentClose(){
@@ -139,6 +139,6 @@ module.exports = class DocBlock {
    * @return {Annotation}
    */
   getAnnotation(annotation){
-    return this[_].annotations[annotation];
+    return typeof this[_].annotations[annotation] !== "undefined" ? this[_].annotations[annotation] : [];
   }
 };

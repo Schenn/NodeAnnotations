@@ -25,21 +25,34 @@ module.exports = class Annotation {
     }
   }
 
+  /**
+   * Parse a comment line for annotations.
+   *
+   * @param {string} expression
+   */
   fromExpression(expression){
     this[_].phrase = expression.match(phraseRegex)[0].replace("*", "").trim();
-    this[_].nodes.name = expression.match(/(@\w+)/)[0];
+    this[_].nodes.name = expression.match(/(@\w+)/)[0].replace("@", "");
     // Extract the annotation from the string.
     let typeMatch = this[_].phrase.match(/({.+})/);
-    let value = this[_].phrase.replace(this[_].nodes.name, '');
+    this[_].nodes.value = this[_].phrase.replace(`@${this[_].nodes.name}`, '').trim();
     if(typeMatch){
-      value = value.replace(typeMatch[0], '').trim();
+      this[_].nodes.value = this[_].nodes.value.replace(typeMatch[0], '').trim();
     }
 
-    this[_].nodes.name = this[_].nodes.name.replace("@", "");
-    this[_].nodes.type = (typeMatch) ? typeMatch[0].replace("{", '').replace("}", '') : '';
-    this[_].nodes.value = value.trim();
+    this[_].nodes.type = (typeMatch) ?
+      typeMatch[0].replace("{", '').replace("}", '') :
+      '';
+
   }
 
+  /**
+   * Set the properties for the Annotation from values.
+   *
+   * @param {string} name
+   * @param {string|null} value
+   * @param {string|null} type
+   */
   fromValues(name, value=null, type=null){
     this[_].phrase = `@${name}${type ? ` {${type}} `: ''}${value ? ` ${value}` : ''}`;
     this[_].nodes.name = name;
@@ -48,13 +61,18 @@ module.exports = class Annotation {
   }
 
   /**
-   * Get the REGEX which is used to identify an annotation in a comment block.
+   * Get the REGEX which is used to identify an annotation within a comment block.
    * @return {RegExp}
    */
   static get REGEX(){
     return phraseRegex;
   }
 
+  /**
+   * Get the whole annotation string
+   *
+   * @return {*|string|string}
+   */
   get phrase(){
     return this[_].phrase;
   }
@@ -69,7 +87,8 @@ module.exports = class Annotation {
   }
 
   /**
-   * If the annotation has a 'type' in between the name and value, return that entry
+   * The annotation's {type}
+   *  If there was no type an empty string is returned.
    *
    * @return {string}
    */
@@ -79,7 +98,7 @@ module.exports = class Annotation {
 
   /**
    * Return the value associated with the given annotation.
-   *  If there is no value for the annotation, undefined is returned
+   *  If there was no value, an empty string is returned.
    *
    * @return {string}
    */

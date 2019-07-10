@@ -88,7 +88,7 @@ module.exports = class Collector extends EventEmitter {
    *
    * @param {string} fullPath
    */
-  collectFromPath(fullPath, onComplete, onError=(err)=>{console.log(err);}){
+  collectFromPath(fullPath, onComplete, onError=(err)=>{console.error(err);}){
     if(this[_].filePath ===''){
       this[_].filePath = fullPath;
     }
@@ -105,6 +105,7 @@ module.exports = class Collector extends EventEmitter {
         if(err){
           onError(err);
         }
+        // add the subpath count to the filecount. when fileCount is 0, then all files are considered complete.
         this[_].fileCount += subpaths.length;
         for(let subpath of subpaths){
           this.collectFromPath(path.join(fullPath,subpath), onComplete, onError);
