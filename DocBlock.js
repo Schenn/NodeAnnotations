@@ -6,6 +6,13 @@ const _ = Symbol("private");
 const commentOpen = '/**';
 const commentClose = '*/';
 
+// class {name} [extends name]
+const classRegex = /((class\s[A-z]+\s?)(?:\sextends\s[A-z]+\s)?){$/gm;
+// */\n methodName[ ](prop, prop..)[ \n]{  only collects methods which follow a comment block
+const methodRegex = /([A-z]+)(?:\s?\([A-z,\s]*\)\s?)\n?\s*{/;
+// */\n set|get propName ([value])[ \n]{  only collects properties which follow a comment block
+const propRegex = /((set|get)\s([A-z]+))(?:\s?\([A-z\s]*\)\s?)\n?\s*{/;
+
 /**
  * DocBlock represents a comment node and parses the annotations from the comment into Annotation objects.
  *
@@ -15,8 +22,47 @@ module.exports = class DocBlock {
 
   constructor(){
     this[_] = {
+      name: '',
+      type: '',
+      extends: '',
+      readOnly: false,
       annotations: {},
       comment:''
+    };
+  }
+
+  [Symbol.iterator]() {
+    let annotationKeys = Object.keys(this[_].annotations);
+    let keyStep = 0;
+    let annotationStep = 0;
+    /**
+     * Iteration Process to allow devs to simply iterate through the annotations in a doc block
+     * @return {*}
+     */
+    let next = ()=>{
+      // If we haven't reached the end of the annotation keys
+      if(keyStep < annotationKeys.length){
+        let key = annotationKeys[keyStep];
+        // If the step through the annotations hasn't already reached the end of the collection
+        if(annotationStep < this[_].annotations[key].length){
+          let annotation = this[_].annotations[key][annotationStep];
+          // If the next annotation step would reach the end of the collection,
+          //  reset the annotation step and advance the keystep
+          if(++annotationStep >= this[_].annotations[key].length){
+            annotationStep = 0;
+            keyStep++;
+          }
+          return {value: annotation, done: false};
+        } else {
+          annotationStep = 0;
+          keyStep++;
+        }
+      } else {
+        return {value: undefined, done: true};
+      }
+    };
+    return {
+      next:next.bind(this)
     };
   }
 
@@ -61,6 +107,49 @@ module.exports = class DocBlock {
     }
   }
 
+  get name(){
+    return this[_].name;
+  }
+
+  get type(){
+    return this[_].type;
+  }
+
+  get extends(){
+    return this[_].extends;
+  }
+
+  get readOnly(){
+    return this[_].readOnly;
+  }
+
+  set readOnly(mutable){
+    this[_].readOnly = mutable;
+  }
+
+  getNameForContent(commentIsFor){
+    if(propRegex.test(commentIsFor)){
+      this[_].type = "property";
+      let prop = commentIsFor.substring(commentIsFor.indexOf("et ")-1,
+        commentIsFor.indexOf("(")).trim().split(" ");
+      this[_].name = prop[1];
+      this[_].readOnly = (prop[0] === "get");
+    } else if (methodRegex.test(commentIsFor)){
+      this[_].type = "method";
+      this[_].name = commentIsFor.replace(commentClose, "").trim();
+      this[_].name = this[_].name.substring(0, this[_].name.indexOf("(")).trim();
+    } else if (classRegex.test(commentIsFor)){
+      this[_].type = "class";
+      let classPhrase = commentIsFor.match(classRegex);
+      let classData = classPhrase[0].match(/\w+/g);
+      this[_].name = classData[1];
+      this[_].extends = (typeof classData[3] !== "undefined") ? classData[3] : '';
+    } else {
+      // There's no prop, method, or class name to associate with this block.
+      // Depending on what this docblock is actually parsing, that might be ok.
+    }
+  }
+
   /**
    * Memoize the comment block which starts at a given index
    *
@@ -76,6 +165,10 @@ module.exports = class DocBlock {
       let commentEnd = fileContent.indexOf(commentClose, commentIndexStart) + commentClose.length;
       this.comment = fileContent.substring(commentIndexStart, commentEnd);
       nextIndex = commentEnd;
+      let commentIsForIndex = fileContent.indexOf("{", nextIndex)+1;
+      let commentIsFor = fileContent.substring(nextIndex, commentIsForIndex);
+      this.getNameForContent(commentIsFor);
+
     }
 
     return nextIndex;
@@ -140,5 +233,14 @@ module.exports = class DocBlock {
    */
   getAnnotation(annotation){
     return typeof this[_].annotations[annotation] !== "undefined" ? this[_].annotations[annotation] : [];
+  }
+
+  /**
+   * Get the value of the first matching annotation
+   * @param {string} annotation
+   * @return {null | string}
+   */
+  getFirstAnnotationValue(annotation){
+    return typeof this[_].annotations[annotation] !== "undefined" ? this[_].annotations[annotation][0].value : null;
   }
 };

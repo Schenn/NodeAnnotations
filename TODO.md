@@ -1,0 +1,1 @@
+Add support for metadata to note decorators in addition to docblocks.

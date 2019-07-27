@@ -33,6 +33,48 @@ module.exports = class Metadata {
     };
   }
 
+  [Symbol.iterator]() {
+    let docStep = 0;
+    let methods = this.methods;
+    let properties = this.propertyData;
+    let methodStage = Object.keys(properties).length; // would be -1, but classDoc is first, which negates the -1
+    let phaseStep = 0;
+    let next = ()=>{
+      // class doc at index 0
+      if(docStep === 0){
+        docStep++;
+        return {value: {type: 'class', doc: this[_].classDoc}, done: false};
+      }
+      // If the current step is a property
+      else if (docStep <= methodStage){
+        // If the current step is not greater than the number of properties
+        if(phaseStep < properties.length){
+          let prop = this[_].propertyData[properties[phaseStep]];
+          docStep++;
+          phaseStep++;
+          // If we've parsed through the properties, reset the phase step for methods.
+          if(phaseStep >= properties.length){
+            phaseStep = 0;
+          }
+          return {value: {type: 'property', doc: prop}, done: false};
+        }
+      }
+      // If the current step is past properties but before the end of the docblocks
+      else if (docStep >= methodStage && docStep < methodStage + methods.length){
+        let method = this[_].methods[methods[phaseStep]];
+        docStep++;
+        phaseStep++;
+        return {value: {type: 'method', doc: method}, done: false};
+      } else {
+        // We've reached the end of the metadata.
+        return {value: undefined, done: true};
+      }
+    };
+    return {
+      next: next.bind(this)
+    }
+  }
+
   /**
    * The filename for the memoized file.
    * @return {string}
@@ -172,27 +214,33 @@ module.exports = class Metadata {
    * Add a docblock to the metadata.
    *  looks like: set prop(arg){, get prop(){, method(arg, arg){, class name {, class name extends name {,
    *
-   * @param {string} contentLine
    * @param {DocBlock} docblock
    * @return {boolean}
    */
-  addDocBlock(contentLine, docblock){
-    let regexPassed = true;
-    switch (true) {
-      case methodRegex.test(contentLine):
-        this.addMethodFromContent(contentLine, docblock);
+  addDocBlock(docblock){
+    let success = true;
+    switch(docblock.type){
+      case "class":
+        this[_].className = docblock.name;
+        this[_].classDoc = docblock;
+        this[_].classExtends = docblock.extends;
         break;
-      case propRegex.test(contentLine):
-        this.addPropFromPhrase(contentLine, docblock);
+      case "property":
+        if(typeof this[_].propertyData[docblock.name] === "undefined"){
+          this[_].propertyData[docblock.name] = docblock;
+        } else {
+          // If this is the second entry for the property, than there must be a getter and setter.
+          this[_].propertyData[docblock.name].readOnly = false;
+        }
         break;
-      case classRegex.test(contentLine):
-        this.setClassFromContent(contentLine, docblock);
+      case "method":
+        this[_].methods[docblock.name] = docblock;
         break;
       default:
-        regexPassed = false;
+        success = false;
         break;
     }
-    return regexPassed;
+    return success;
   }
 
 
@@ -216,8 +264,7 @@ module.exports = class Metadata {
       }
 
       let docblock = new DocBlock();
-      docblock.comment = content.substring(commentData.commentStart, commentData.commentEnd);
-      // If there are no annotations for the docblock, then drop it and go to the next position.
+      docblock.fromIndex(content, commentData.commentStart);
       if(!docblock.hasAnnotations()){
         index=nextComment(content, commentData.commentEnd);
         continue;
@@ -226,78 +273,12 @@ module.exports = class Metadata {
       let commentIsFor = content.substring(commentData.commentEnd - DocBlock.commentClose.length,
         commentData.nextBrace+1);
 
-      index = (!this.addDocBlock(commentIsFor, docblock))?
+      index = (!this.addDocBlock(docblock))?
           nextComment(content, commentData.commentEnd): // Look for the next docblock after the comment closing tag.
           nextComment(content, commentData.nextBrace); // Look for the next opening brace.
     }
     if(typeof cb === "function"){
       cb(this);
-    }
-  }
-
-  /**
-   * Extracts the class information from a string.
-   *  class name [extends othername]
-   * @param {string} content
-   * @param {DocBlock} docblock
-   */
-  setClassFromContent(content, docblock){
-    let classPhrase = content.match(classRegex);
-    if(classPhrase){
-      let classData = classPhrase[0].match(/\w+/g);
-      this[_].className = classData[1];
-      this[_].classExtends = (typeof classData[3] !== "undefined") ? classData[3] : '';
-      this[_].classDoc = docblock;
-    } else {
-      throw "Failed to find class to scan.";
-    }
-  }
-
-  /**
-   * Determines if the docblock is for a method or a property.
-   *  if it's a method, memoize the docblock and method information.
-   *  if it's a property, pass to addPropFromPhrase
-   *
-   * if there is no method or property left to attach to,
-   *   return -1 to stop parsing the text.
-   * else
-   *   returns the index of the next docblock
-   *
-   * @param {string} phrase
-   * @param {DocBlock} comment
-   */
-  addMethodFromContent(phrase, comment){
-    // If it is not a function/method comment, then skip it. Not the purpose of this tool.
-    if(methodRegex.test(phrase)){
-      // its a method for the comment! Cut the closing tag.
-      phrase = phrase.replace(DocBlock.commentClose, '').trim();
-      let method = phrase.substring(0, phrase.indexOf("(")).trim();
-      this[_].methods[method] = comment;
-    }
-  }
-
-  /**
-   * Extracts the property name from text and memoizes it and its associated docblock.
-   *  The memoized property is kept under a wrapper which contains additional details on the property itself.
-   *    e.g. If there is no setter for the property, the property is marked as 'readOnly' for your reference.
-   *    It does not use an annotation to do this to prevent overwriting any of the properties annotations.
-   *
-   * @param {string} phrase
-   * @param {DocBlock} docblock
-   */
-  addPropFromPhrase(phrase, docblock){
-    // cut phrase down to get|set property
-    let prop = phrase.substring(phrase.indexOf("et ")-1, phrase.indexOf("(")).trim().split(" ");
-
-    // if prop doesn't already exist in prop list
-    if(typeof this[_].propertyData[prop[1]] === "undefined"){
-      this[_].propertyData[prop[1]] = {
-        docblock:docblock,
-        readOnly:(prop[0] === "get") // if the property method is a get, set readOnly true. If its a set, set readOnly to false.
-      };
-    } else if(prop[0] === "set"){
-      // If the property exists and a setter is found, update the readonly property to false
-      this[_].propertyData[prop[1]].readOnly = false;
     }
   }
 };
