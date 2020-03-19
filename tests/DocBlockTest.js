@@ -30,6 +30,24 @@ const docBlockPhraseProperty = `/**
   set foo(val) {
 `;
 
+const dockBlockPhraseMethodNormalArguments = `/**
+ *
+ * @foo bar
+ * @prop a
+ * @prop b
+ */
+  foo(a, b) {
+`;
+
+const dockBlockPhraseMethodDestructuredArguments = `/**
+ *
+ * @foo bar
+ * @prop a
+ * @prop b
+ * @prop c
+ */
+  foo(a, b, {c}) {
+`;
 /**
  * Validate that DocBlock can get annotations out of a docblock
  */
@@ -68,6 +86,16 @@ function testClassPhrase(){
 function testMethodPhrase() {
   let doc = new DocBlock();
   doc.fromIndex(docBlockPhraseMethod);
+  assert.strictEqual(doc.name, "foo");
+  assert.strictEqual(doc.type, "method");
+
+  let withArgs = new DocBlock();
+  withArgs.fromIndex(dockBlockPhraseMethodNormalArguments);
+  assert.strictEqual(doc.name, 'foo');
+  assert.strictEqual(doc.type, "method");
+
+  let destructedArgs = new DocBlock();
+  destructedArgs.fromIndex(dockBlockPhraseMethodDestructuredArguments);
   assert.strictEqual(doc.name, "foo");
   assert.strictEqual(doc.type, "method");
 }

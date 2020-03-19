@@ -7,11 +7,15 @@ const commentOpen = '/**';
 const commentClose = '*/';
 
 // class {name} [extends name]
-const classRegex = /((class\s[A-z]+\s?)(?:\sextends\s[A-z]+\s)?){$/gm;
-// */\n methodName[ ](prop, prop..)[ \n]{  only collects methods which follow a comment block
-const methodRegex = /([A-z]+)(?:\s?\([A-z,\s]*\)\s?)\n?\s*{/;
+const classRegex = /((class\s[A-z]+\s?)(?:\sextends\s[A-z]+\s)?){$/;
+
+// */\n methodName[ ](prop, {prop}, ...prop, prop=1, prop="foo", prop='bar')[ \n]{
+// only collects methods which follow a comment block
+//  method and propregex will not capture arguments with a default argument that has a parenthesis between the quotes.
+
+const methodRegex = /([A-z]+)(?:\s?\([^/)]*\)\s?)\n?\s*{/;
 // */\n set|get propName ([value])[ \n]{  only collects properties which follow a comment block
-const propRegex = /((set|get)\s([A-z]+))(?:\s?\([A-z\s]*\)\s?)\n?\s*{/;
+const propRegex = /((set|get)\s([A-z]+))(?:\s?\([^/)]*\)\s?)\n?\s*{/;
 
 /**
  * DocBlock represents a comment node and parses the annotations from the comment into Annotation objects.
@@ -147,6 +151,22 @@ module.exports = class DocBlock {
     } else {
       // There's no prop, method, or class name to associate with this block.
       // Depending on what this docblock is actually parsing, that might be ok.
+      /**
+       * Known Issue:
+       *    if the arguments in a method or property in the file contain a default value that is inside quotes
+       *       AND that phrase contains a closing parenthesis, this method can fail. If the quoted content contains
+       *       a closing parenthesis followed by an opening brace, the caller method will fail.
+       *       If the quoted content contains a characters that match a comment block may cause failures.
+       *
+       *       The reasonable solution is to not use such an explicit default argument and instead set it in the
+       *       method, or use the unicode versions of those characters.
+       *
+       *       Its possible to improve the character stream read so that it can handle the process of interpreting what
+       *       the docblock is for. But, that's a lot of work, tests, and processing time for such a rare edge case.
+       *
+       *       This only applies to manually written quoted content in the file. Not string values in memory.
+       */
+
     }
   }
 
