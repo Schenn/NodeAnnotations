@@ -1,21 +1,8 @@
 const Annotation = require("./Annotation");
 
-const phraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
+const annotationPhraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
 const _ = Symbol("private");
 
-const commentOpen = '/**';
-const commentClose = '*/';
-
-// class {name} [extends name]
-const classRegex = /((class\s[A-z]+\s?)(?:\sextends\s[A-z]+\s)?){$/;
-
-// */\n methodName[ ](prop, {prop}, ...prop, prop=1, prop="foo", prop='bar')[ \n]{
-// only collects methods which follow a comment block
-//  method and propregex will not capture arguments with a default argument that has a parenthesis between the quotes.
-
-const methodRegex = /([A-z]+)(?:\s?\([^/)]*\)\s?)\n?\s*{/;
-// */\n set|get propName ([value])[ \n]{  only collects properties which follow a comment block
-const propRegex = /((set|get)\s([A-z]+))(?:\s?\([^/)]*\)\s?)\n?\s*{/;
 
 /**
  * DocBlock represents a comment node and parses the annotations from the comment into Annotation objects.
@@ -24,15 +11,18 @@ const propRegex = /((set|get)\s([A-z]+))(?:\s?\([^/)]*\)\s?)\n?\s*{/;
  */
 module.exports = class DocBlock {
 
-  constructor(){
+  constructor(type='', comment = ''){
     this[_] = {
       name: '',
-      type: '',
+      type: type,
       extends: '',
       readOnly: false,
       annotations: {},
       comment:''
     };
+    if(comment !== ''){
+      this.comment = comment;
+    }
   }
 
   [Symbol.iterator]() {
@@ -71,22 +61,6 @@ module.exports = class DocBlock {
   }
 
   /**
-   * The string that is used to identify an opening comment
-   * @return {string}
-   */
-  static get commentOpen(){
-    return commentOpen;
-  }
-
-  /**
-   * The string that is used to identify a closing comment
-   * @return {string}
-   */
-  static get commentClose(){
-    return commentClose;
-  }
-
-  /**
    * Get the full text of the comment node
    * @return {string}
    */
@@ -102,7 +76,7 @@ module.exports = class DocBlock {
   set comment(text){
     if(this[_].comment === ''){
       this[_].comment = text;
-      let annotationMatches = text.match(phraseRegex);
+      let annotationMatches = text.match(annotationPhraseRegex);
       if(annotationMatches){
         for (let expression of annotationMatches){
           this.annotationFromPhrase(expression);
@@ -131,67 +105,13 @@ module.exports = class DocBlock {
     this[_].readOnly = mutable;
   }
 
-  getNameForContent(commentIsFor){
-    if(propRegex.test(commentIsFor)){
-      this[_].type = "property";
-      let prop = commentIsFor.substring(commentIsFor.indexOf("et ")-1,
-        commentIsFor.indexOf("(")).trim().split(" ");
-      this[_].name = prop[1];
-      this[_].readOnly = (prop[0] === "get");
-    } else if (methodRegex.test(commentIsFor)){
-      this[_].type = "method";
-      this[_].name = commentIsFor.replace(commentClose, "").trim();
-      this[_].name = this[_].name.substring(0, this[_].name.indexOf("(")).trim();
-    } else if (classRegex.test(commentIsFor)){
-      this[_].type = "class";
-      let classPhrase = commentIsFor.match(classRegex);
-      let classData = classPhrase[0].match(/\w+/g);
-      this[_].name = classData[1];
-      this[_].extends = (typeof classData[3] !== "undefined") ? classData[3] : '';
-    } else {
-      // There's no prop, method, or class name to associate with this block.
-      // Depending on what this docblock is actually parsing, that might be ok.
-      /**
-       * Known Issue:
-       *    if the arguments in a method or property in the file contain a default value that is inside quotes
-       *       AND that phrase contains a closing parenthesis, this method can fail. If the quoted content contains
-       *       a closing parenthesis followed by an opening brace, the caller method will fail.
-       *       If the quoted content contains a characters that match a comment block may cause failures.
-       *
-       *       The reasonable solution is to not use such an explicit default argument and instead set it in the
-       *       method, or use the unicode versions of those characters.
-       *
-       *       Its possible to improve the character stream read so that it can handle the process of interpreting what
-       *       the docblock is for. But, that's a lot of work, tests, and processing time for such a rare edge case.
-       *
-       *       This only applies to manually written quoted content in the file. Not string values in memory.
-       */
-
+  forBlock(...args){
+    this[_].name = args[0];
+    if(this[_].type === "class"){
+      this[_].extends = args[1];
+    } else if(this[_].type === "property"){
+      this[_].readOnly = args[1] === 'get';
     }
-  }
-
-  /**
-   * Memoize the comment block which starts at a given index
-   *
-   * @param {string} fileContent
-   * @param {int} index
-   * @return {number} Where the comment ends.
-   */
-  fromIndex(fileContent, index=0){
-    let commentIndexStart = fileContent.indexOf(commentOpen, index);
-    let nextIndex = commentIndexStart;
-    // If there's no docblock, there's nothing to collect.
-    if(commentIndexStart !== -1) {
-      let commentEnd = fileContent.indexOf(commentClose, commentIndexStart) + commentClose.length;
-      this.comment = fileContent.substring(commentIndexStart, commentEnd);
-      nextIndex = commentEnd;
-      let commentIsForIndex = fileContent.indexOf("{", nextIndex)+1;
-      let commentIsFor = fileContent.substring(nextIndex, commentIsForIndex);
-      this.getNameForContent(commentIsFor);
-
-    }
-
-    return nextIndex;
   }
 
   /**

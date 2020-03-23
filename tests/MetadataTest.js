@@ -83,7 +83,7 @@ function testIteration(){
 function testMetaDataParsing(){
   let metaTest = new Metadata();
   metaTest.parseFile(mockClassPath).then(()=>{
-    assert.strictEqual("Mock", metaTest.className);
+    assert.strictEqual(metaTest.className, "Mock");
     assert.ok(metaTest.classDoc);
 
     assert.strictEqual(metaTest.methods.length, 3);
@@ -122,7 +122,9 @@ let hrstart = process.hrtime();
 runTest();
 let hrend = process.hrtime(hrstart);
 console.info('Metadata tests Execution time: %dms', hrend[1] / 1000000);
+/*
 
 runTestLoop(100);
 hrend = process.hrtime(hrstart);
 console.info('100 loop Metadata tests Execution time: %dms', hrend[1] / 1000000);
+*/

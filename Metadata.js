@@ -3,17 +3,21 @@ const DocBlock = require("./DocBlock");
 const { createRequireFromPath } = require("module");
 const _ = Symbol("private");
 
-// class {name} [extends name]
-const classRegex = /((class\s[A-z]+\s?)(?:\sextends\s[A-z]+\s)?){$/gm;
-// */\n methodName[ ](prop, prop..)[ \n]{  only collects methods which follow a comment block
-const methodRegex = /(?:\*\/\n?\s+)([A-z]+)(?:\s?\([A-z,\s]*\)\s?)\n?\s*{/;
-// */\n set|get propName ([value])[ \n]{  only collects properties which follow a comment block
-const propRegex = /(?:\*\/\n?\s+)((set|get)\s([A-z]+))(?:\s?\([A-z\s]*\)\s?)\n?\s*{/;
-
 // Find the index of the next docblock.
 const nextComment = (fileContent, from)=>{
   return fileContent.indexOf(DocBlock.commentOpen, from) - 1;
 };
+
+// class {name} [extends name]  // index 1 is class name, index 3 is the class it extends
+const classRegex = /^\s*(?:\*\/)\s*(?:module.exports\s?=\s?)?class\s([A-z]+)((?:\sextends\s)([A-z]+))?\s*{\s*$/m;
+// */\n methodName[ ](prop, {prop}, ...prop, prop=1, prop="foo", prop='bar')[ \n]{
+const methodRegex = /^\s*(?:\*\/)\s*([A-z]+)(?:\s?\([^/)]*\)\s?)\n?\s*{/gm;
+// */\n set|get propName ([value])[ \n]{  only collects properties which follow a comment block
+const propRegex = /^\s*(?:\*\/)\s*((set|get)\s([A-z]+))(?:\s?\([^/)]*\)\s?)\n?\s*{/gm;
+
+const commentOpen = '/**';
+const commentClose = '*/';
+
 
 /**
  * Metadata memoizes the details for a given class
@@ -182,35 +186,6 @@ module.exports = class Metadata {
   }
 
   /**
-   * Determine if we can create a doc block or not. If we can, return the positional data of marker characters.
-   * @param {string} content
-   * @param {number} index
-   * @return {boolean | Object}
-   */
-  canCreateDocBlock(content, index){
-    let result = false;
-    let commentStart = content.indexOf(DocBlock.commentOpen, index);
-    // If there's no comments in the content, break
-    if(commentStart !== -1){
-      let commentEnd = content.indexOf(DocBlock.commentClose, commentStart);
-      if(commentEnd === -1){
-        throw Error("Malformed file has an open comment but no closing comment marker.");
-      }
-      let nextBrace = content.indexOf("{", commentEnd);
-      // if there's no more opening braces, then there's nothing to interpret from the comment.
-      if(nextBrace !== -1) {
-        result = {
-          commentStart: commentStart,
-          commentEnd: commentEnd,
-          nextBrace: nextBrace
-        };
-      }
-    }
-
-    return result;
-  }
-
-  /**
    * Add a docblock to the metadata.
    *  looks like: set prop(arg){, get prop(){, method(arg, arg){, class name {, class name extends name {,
    *
@@ -256,27 +231,43 @@ module.exports = class Metadata {
    * @param {function} cb
    */
   parseContent(content, cb=null){
-    let index = 0;
-    while(index > -1){
-      let commentData = this.canCreateDocBlock(content, index);
-      if(!commentData){
-        break;
-      }
-
-      let docblock = new DocBlock();
-      docblock.fromIndex(content, commentData.commentStart);
-      if(!docblock.hasAnnotations()){
-        index=nextComment(content, commentData.commentEnd);
-        continue;
-      }
-
-      let commentIsFor = content.substring(commentData.commentEnd - DocBlock.commentClose.length,
-        commentData.nextBrace+1);
-
-      index = (!this.addDocBlock(docblock))?
-          nextComment(content, commentData.commentEnd): // Look for the next docblock after the comment closing tag.
-          nextComment(content, commentData.nextBrace); // Look for the next opening brace.
+    // Get the class phrase.
+    // If there's no class phrase, then abort.
+    let classPhrase = classRegex.exec(content);
+    if(!classPhrase){
+      return;
     }
+
+    // class index = classPhrase.index
+    let commentStart = content.lastIndexOf(commentOpen, classPhrase.index);
+    let classDoc = new DocBlock( "class", content.substring(commentStart, classPhrase.index));
+    if(!classDoc.hasAnnotations()){
+      return;
+    }
+
+    classDoc.forBlock(classPhrase[1], classPhrase[3]);
+    this.addDocBlock(classDoc);
+
+    let property;
+    while(property = propRegex.exec(content)){
+      let commentStart = content.lastIndexOf(commentOpen, property.index);
+      let propBlock = new DocBlock("property", content.substring(commentStart, property.index));
+      if(propBlock.hasAnnotations()){
+        propBlock.forBlock(property[3], property[2]);
+        this.addDocBlock(propBlock);
+      }
+    }
+
+    let method;
+    while(method = methodRegex.exec(content)){
+      let commentStart = content.lastIndexOf(commentOpen, method.index);
+      let methodBlock = new DocBlock("method", content.substring(commentStart, method.index));
+      if(methodBlock.hasAnnotations()){
+        methodBlock.forBlock(method[1]);
+        this.addDocBlock(methodBlock);
+      }
+    }
+
     if(typeof cb === "function"){
       cb(this);
     }
