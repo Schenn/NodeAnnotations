@@ -103,4 +103,13 @@ module.exports = class Mock {
      */
     doThing();
   }
+
+  /**
+   * This should be picked up
+   * @test foo
+   * @param {object} foo
+   */
+  deconstructedMethod(bar, {foo}){
+    doThing();
+  }
 };

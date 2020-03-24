@@ -13,7 +13,6 @@ const mockClassPath = path.join(process.cwd(), "mocks/Mock.js");
 function checkMethods(metaTest){
   for(let method of metaTest.methods){
     let docblock = metaTest.forMethod(method);
-
     // assert we get annotations for annotated methods
     // mock class has "test" annotation with a value of "foo"
     //  @test foo
@@ -86,7 +85,7 @@ function testMetaDataParsing(){
     assert.strictEqual(metaTest.className, "Mock");
     assert.ok(metaTest.classDoc);
 
-    assert.strictEqual(metaTest.methods.length, 3);
+    assert.strictEqual(metaTest.methods.length, 4);
     assert.strictEqual(metaTest.propertyData.length, 2);
 
     assert.ok(metaTest.getInstance() instanceof Mock);

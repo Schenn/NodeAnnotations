@@ -95,4 +95,13 @@ module.exports = class OtherMock {
      */
     doThing();
   }
+
+  /**
+   * This should be picked up
+   * @test foo
+   * @param {object} foo
+   */
+  deconstructedMethod(bar, {foo}){
+    doThing();
+  }
 };

@@ -11,7 +11,7 @@ let mockCount = 0;
 
 let successTimeout = setTimeout(()=>{
   assert.fail("Collector callback never reached.");
-}, 2000);
+}, 3000);
 
 /**
  * Validate the collector is able to pull the metadata for class files.
@@ -21,8 +21,8 @@ function collectorTest () {
    * Set the event before collecting metadata.
    */
   collector.on("fileParsed", (metadata, namespace)=>{
-    assert.ok(++mockCount <= 3);
-    assert.strictEqual(metadata.methods.length, 3);
+    assert.ok(++mockCount <= 3, "Too many mocks");
+    assert.strictEqual(Object.keys(metadata.methods).length, 4);
     assert.strictEqual(metadata.propertyData.length, 2);
   });
 
@@ -38,12 +38,12 @@ function collectorTest () {
   collector.collect().then(()=>{
     // Validate that the callback is only called once
     assert.strictEqual(collector.namespaces.length, 3);
-    collector.namespaces.forEach((name)=>{
+    for(let i = 0; i < collector.namespaces; i++){
+      let name = collector.namespaces[i];
       let data = collector.classMetadata(name);
-      assert.strictEqual(data.methods.length, 3);
+      assert.strictEqual(data.methods.length, 4);
       assert.strictEqual(data.propertyData.length, 2);
-    });
-
+    }
     if(mockCount === 3){
       clearTimeout(successTimeout);
     } else {

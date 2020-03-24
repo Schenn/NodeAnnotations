@@ -64,7 +64,7 @@ module.exports = class Metadata {
         }
       }
       // If the current step is past properties but before the end of the docblocks
-      else if (docStep >= methodStage && docStep < methodStage + methods.length){
+      else if (docStep >= methodStage && docStep <= methodStage + methods.length){
         let method = this[_].methods[methods[phaseStep]];
         docStep++;
         phaseStep++;
@@ -237,7 +237,6 @@ module.exports = class Metadata {
     if(!classPhrase){
       return;
     }
-
     // class index = classPhrase.index
     let commentStart = content.lastIndexOf(commentOpen, classPhrase.index);
     let classDoc = new DocBlock( "class", content.substring(commentStart, classPhrase.index));
@@ -247,7 +246,6 @@ module.exports = class Metadata {
 
     classDoc.forBlock(classPhrase[1], classPhrase[3]);
     this.addDocBlock(classDoc);
-
     let property;
     while(property = propRegex.exec(content)){
       let commentStart = content.lastIndexOf(commentOpen, property.index);
