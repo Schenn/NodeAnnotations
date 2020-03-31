@@ -1,7 +1,6 @@
 const fs = require("fs");
 const DocBlock = require("./DocBlock");
 const { createRequireFromPath } = require("module");
-const _ = Symbol("private");
 
 // Find the index of the next docblock.
 const nextComment = (fileContent, from)=>{
@@ -26,53 +25,51 @@ const commentClose = '*/';
  * @type {Metadata}
  */
 module.exports = class Metadata {
+  #fileName = "";
+  #className = "";
+  #classExtends = "";
+  #classDoc = null;
+  #methods = {};
+  #propertyData = {};
+
   constructor(){
-    this[_] = {
-      fileName: "",
-      className: "",
-      classExtends: "",
-      classDoc: null,
-      methods: {},
-      propertyData:{}
-    };
   }
 
   [Symbol.iterator]() {
     let docStep = 0;
     let methods = this.methods;
     let properties = this.propertyData;
-    let methodStage = Object.keys(properties).length; // would be -1, but classDoc is first, which negates the -1
+    let methodStage = properties.length; // would be -1, but classDoc is first, which negates the -1
     let phaseStep = 0;
     let next = ()=>{
+      let retValue = {value: undefined, done: false};
       // class doc at index 0
-      if(docStep === 0){
-        docStep++;
-        return {value: {type: 'class', doc: this[_].classDoc}, done: false};
-      }
-      // If the current step is a property
-      else if (docStep <= methodStage){
-        // If the current step is not greater than the number of properties
-        if(phaseStep < properties.length){
-          let prop = this[_].propertyData[properties[phaseStep]];
+      switch(docStep){
+        case docStep === 0:
+          docStep++;
+          retValue.value = {type: 'class', doc: this.#classDoc};
+          break;
+        case docStep > 0 && docStep <= methodStage && phaseStep < properties.length:
+          let prop = this.#propertyData[properties[phaseStep]];
           docStep++;
           phaseStep++;
           // If we've parsed through the properties, reset the phase step for methods.
           if(phaseStep >= properties.length){
             phaseStep = 0;
           }
-          return {value: {type: 'property', doc: prop}, done: false};
-        }
+          retValue.value = {type: 'property', doc: prop};
+          break;
+        case docStep >= methodStage && docStep <= methodStage + methods.length:
+          let method = this.#methods[methods[phaseStep]];
+          docStep++;
+          phaseStep++;
+          retValue.value = {type: 'method', doc: method};
+          break;
+        default:
+          retValue.done = true;
+          break;
       }
-      // If the current step is past properties but before the end of the docblocks
-      else if (docStep >= methodStage && docStep <= methodStage + methods.length){
-        let method = this[_].methods[methods[phaseStep]];
-        docStep++;
-        phaseStep++;
-        return {value: {type: 'method', doc: method}, done: false};
-      } else {
-        // We've reached the end of the metadata.
-        return {value: undefined, done: true};
-      }
+      return retValue;
     };
     return {
       next: next.bind(this)
@@ -84,7 +81,7 @@ module.exports = class Metadata {
    * @return {string}
    */
   get fileName(){
-    return this[_].fileName;
+    return this.#fileName;
   }
 
   /**
@@ -92,7 +89,7 @@ module.exports = class Metadata {
    * @return {string}
    */
   get className(){
-    return this[_].className;
+    return this.#className;
   }
 
   /**
@@ -100,7 +97,7 @@ module.exports = class Metadata {
    * @return {string}
    */
   get extends(){
-    return this[_].extends;
+    return this.#classExtends;
   }
 
   /**
@@ -109,7 +106,7 @@ module.exports = class Metadata {
    * @return {DocBlock}
    */
   get classDoc(){
-    return this[_].classDoc;
+    return this.#classDoc;
   }
 
   /**
@@ -118,7 +115,7 @@ module.exports = class Metadata {
    * @return {string[]}
    */
   get methods(){
-    return Object.keys(this[_].methods);
+    return Object.keys(this.#methods);
   }
 
   /**
@@ -126,7 +123,7 @@ module.exports = class Metadata {
    * @return {string[]}
    */
   get propertyData(){
-    return Object.keys(this[_].propertyData);
+    return Object.keys(this.#propertyData);
   }
 
   /**
@@ -148,7 +145,7 @@ module.exports = class Metadata {
    * @return {DocBlock}
    */
   forMethod(method){
-    return this[_].methods[method];
+    return this.#methods[method];
   }
 
   /**
@@ -160,7 +157,7 @@ module.exports = class Metadata {
    * @return {object}
    */
   forProperty(prop){
-    return this[_].propertyData[prop];
+    return this.#propertyData[prop];
   }
 
   /**
@@ -170,7 +167,7 @@ module.exports = class Metadata {
    * @return {Promise}
    */
   parseFile(fullPath){
-    this[_].fileName = fullPath;
+    this.#fileName = fullPath;
     return new Promise((resolve, reject)=>{
       fs.readFile(fullPath,'utf8', (err, fileContent)=>{
         if(err){
@@ -196,20 +193,20 @@ module.exports = class Metadata {
     let success = true;
     switch(docblock.type){
       case "class":
-        this[_].className = docblock.name;
-        this[_].classDoc = docblock;
-        this[_].classExtends = docblock.extends;
+        this.#className = docblock.name;
+        this.#classDoc = docblock;
+        this.#classExtends = docblock.extends;
         break;
       case "property":
-        if(typeof this[_].propertyData[docblock.name] === "undefined"){
-          this[_].propertyData[docblock.name] = docblock;
+        if(typeof this.#propertyData[docblock.name] === "undefined"){
+          this.#propertyData[docblock.name] = docblock;
         } else {
           // If this is the second entry for the property, than there must be a getter and setter.
-          this[_].propertyData[docblock.name].readOnly = false;
+          this.#propertyData[docblock.name].readOnly = false;
         }
         break;
       case "method":
-        this[_].methods[docblock.name] = docblock;
+        this.#methods[docblock.name] = docblock;
         break;
       default:
         success = false;
@@ -237,9 +234,11 @@ module.exports = class Metadata {
     if(!classPhrase){
       return;
     }
+
     // class index = classPhrase.index
     let commentStart = content.lastIndexOf(commentOpen, classPhrase.index);
-    let classDoc = new DocBlock( "class", content.substring(commentStart, classPhrase.index));
+    let commentEnd = content.indexOf(commentClose, commentStart);
+    let classDoc = new DocBlock( "class", content.substring(commentStart, commentEnd + commentClose.length));
     if(!classDoc.hasAnnotations()){
       return;
     }
@@ -247,9 +246,9 @@ module.exports = class Metadata {
     classDoc.forBlock(classPhrase[1], classPhrase[3]);
     this.addDocBlock(classDoc);
     let property;
-    while(property = propRegex.exec(content)){
+    while((property = propRegex.exec(content))){
       let commentStart = content.lastIndexOf(commentOpen, property.index);
-      let propBlock = new DocBlock("property", content.substring(commentStart, property.index));
+      let propBlock = new DocBlock("property", content.substring(commentStart, property.index + commentClose.length));
       if(propBlock.hasAnnotations()){
         propBlock.forBlock(property[3], property[2]);
         this.addDocBlock(propBlock);
@@ -257,9 +256,9 @@ module.exports = class Metadata {
     }
 
     let method;
-    while(method = methodRegex.exec(content)){
+    while((method = methodRegex.exec(content))){
       let commentStart = content.lastIndexOf(commentOpen, method.index);
-      let methodBlock = new DocBlock("method", content.substring(commentStart, method.index));
+      let methodBlock = new DocBlock("method", content.substring(commentStart, method.index + commentClose.length));
       if(methodBlock.hasAnnotations()){
         methodBlock.forBlock(method[1]);
         this.addDocBlock(methodBlock);

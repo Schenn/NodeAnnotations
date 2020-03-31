@@ -1,49 +1,38 @@
 // \s*\s@word[\s{typeInfo}][\swordorcharacters]$
 const phraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)/g;
 
-const _ = Symbol("private");
-
 /**
  * Annotation wraps the individual elements of an annotation string.
  *  An annotation string looks like
  * @type {module.Annotation}
  */
 module.exports = class Annotation {
-  constructor(expression = ''){
 
-    this[_] = {
-      // Drop the comment star, the annotation @ symbol and any remaining whitespace at the beginning of the phrase.
-      phrase: '',
-      nodes: {
-        name: '',
-        type: '',
-        value: ''
-      }
-    };
+  #phrase = '';
+  #nodes = {
+    name: "",
+    type: "",
+    value: ""
+  };
+
+  constructor(expression = ''){
     if(expression !== ''){
-      this.fromExpression(expression);
+      this.expression = expression;
     }
   }
 
-  /**
-   * Parse a comment line for annotations.
-   *
-   * @param {string} expression
-   */
-  fromExpression(expression){
-    this[_].phrase = expression.match(phraseRegex)[0].replace("*", "").trim();
-    this[_].nodes.name = expression.match(/(@\w+)/)[0].replace("@", "");
-    // Extract the annotation from the string.
-    let typeMatch = this[_].phrase.match(/({.+})/);
-    this[_].nodes.value = this[_].phrase.replace(`@${this[_].nodes.name}`, '').trim();
+  set expression(expression){
+    this.#phrase = expression.match(phraseRegex)[0].replace("*", "").trim();
+    this.#nodes.name = expression.match(/(@\w+)/)[0].replace("@", "");
+    let typeMatch = this.#phrase.match(/({.+})/);
+    this.#nodes.value = this.#phrase.replace(`@${this.#nodes.name}`, '').trim();
     if(typeMatch){
-      this[_].nodes.value = this[_].nodes.value.replace(typeMatch[0], '').trim();
+      this.#nodes.value = this.#nodes.value.replace(typeMatch[0], '').trim();
     }
 
-    this[_].nodes.type = (typeMatch) ?
+    this.#nodes.type = (typeMatch) ?
       typeMatch[0].replace("{", '').replace("}", '') :
       '';
-
   }
 
   /**
@@ -54,17 +43,17 @@ module.exports = class Annotation {
    * @param {string|null} type
    */
   fromValues(name, value=null, type=null){
-    this[_].phrase = `@${name}${type ? ` {${type}} `: ''}${value ? ` ${value}` : ''}`;
-    this[_].nodes.name = name;
-    this[_].nodes.value = value;
-    this[_].nodes.type = type;
+    this.#phrase = `@${name}${type ? ` {${type}} `: ''}${value ? ` ${value}` : ''}`;
+    this.#nodes.name = name;
+    this.#nodes.value = value;
+    this.#nodes.type = type;
   }
 
   /**
    * Get the REGEX which is used to identify an annotation within a comment block.
    * @return {RegExp}
    */
-  static get REGEX(){
+  static get phraseRegex(){
     return phraseRegex;
   }
 
@@ -74,7 +63,7 @@ module.exports = class Annotation {
    * @return {*|string|string}
    */
   get phrase(){
-    return this[_].phrase;
+    return this.#phrase;
   }
 
   /**
@@ -83,7 +72,7 @@ module.exports = class Annotation {
    * @return {string}
    */
   get name(){
-    return this[_].nodes.name;
+    return this.#nodes.name;
   }
 
   /**
@@ -93,7 +82,7 @@ module.exports = class Annotation {
    * @return {string}
    */
   get type(){
-    return this[_].nodes.type;
+    return this.#nodes.type;
   }
 
   /**
@@ -103,6 +92,6 @@ module.exports = class Annotation {
    * @return {string}
    */
   get value(){
-    return this[_].nodes.value;
+    return this.#nodes.value;
   }
 };

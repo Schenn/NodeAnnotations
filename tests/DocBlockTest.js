@@ -16,8 +16,8 @@ const docBlockPhraseA = `/**
  *    Metadata filters the docblocks to only be for classes and their props and methods.
  */
 function testPhraseA(){
-  let docblockA = new DocBlock();
-  let commentEnd = docblockA.comment = docBlockPhraseA;
+  let docblockA = new DocBlock("foo", docBlockPhraseA);
+  let commentEnd = docblockA.comment.length;
   assert.strictEqual(docBlockPhraseA.length, commentEnd, 'End of comment was not at expected position.');
   assert.ok(docblockA.hasAnnotation("param"));
   let typeAnnotations = docblockA.getAnnotation("param");
@@ -40,8 +40,7 @@ function testPhraseA(){
  * Validate that we can iterate through the annotations in a doc block.
  */
 function testIteration(){
-  let doc = new DocBlock();
-  doc.fromIndex(docBlockPhraseA);
+  let doc = new DocBlock("foo", docBlockPhraseA);
   let i = 0;
   for(let annotation of doc){
     switch(i){
@@ -64,9 +63,6 @@ function testIteration(){
 
 function runTest() {
   testPhraseA();
-  testClassPhrase();
-  testMethodPhrase();
-  testPropertyPhrase();
   testIteration();
 }
 

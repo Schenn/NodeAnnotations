@@ -4,8 +4,7 @@ const Metadata = require("./Metadata");
 const EventEmitter = require('events');
 
 // Does the phrase end in .js
-const isJsFile = /(\.js)$/;
-const _ = Symbol("private");
+const isJsFile = /\.js$/;
 
 /**
  * The Collector parses directories and files and memoizes their details using the Metadata class.
@@ -14,13 +13,14 @@ const _ = Symbol("private");
  */
 module.exports = class Collector extends EventEmitter {
 
+  #metadata = null;
+  #fileCount = 0;
+
+  filePath = '';
+
   constructor(){
     super();
-    this[_] = {
-      metadata:{},
-      fileCount:0,
-      filePath:'',
-    };
+    this.#metadata = new Map();
   }
 
   /**
@@ -29,7 +29,7 @@ module.exports = class Collector extends EventEmitter {
    * @return {string[]}
    */
   get namespaces(){
-    return Object.keys(this[_].metadata);
+    return Array.from(this.#metadata.keys());
   }
 
   /**
@@ -38,19 +38,7 @@ module.exports = class Collector extends EventEmitter {
    * @return {*|metadata|{}}
    */
   get metadata(){
-    return this[_].metadata;
-  }
-
-  set filePath(filepath){
-    this[_].filePath = filepath;
-  }
-
-  /**
-   * Get the filepath that this collector fetched from.
-   * @return {string}
-   */
-  get filePath(){
-    return this[_].filePath;
+    return this.#metadata;
   }
 
 
@@ -61,7 +49,7 @@ module.exports = class Collector extends EventEmitter {
    * @return {Metadata}
    */
   classMetadata(namespace){
-    return this[_].metadata[namespace];
+    return this.#metadata.get(namespace);
   }
 
   /**
@@ -70,12 +58,14 @@ module.exports = class Collector extends EventEmitter {
    * @param {string} fullPath
    */
   collectFromFile(fullPath, onComplete){
-    let namespace = fullPath.replace(path.join(process.cwd(), this.filePath), "").replace(".js", "");
+    let namespace = fullPath.replace(path.join(process.cwd(), this.filePath), "")
+      .replace(".js", "");
+
     // file
-    this[_].metadata[namespace] = new Metadata();
-    this[_].metadata[namespace].parseFile(fullPath).then((metadata)=>{
+    this.#metadata.set(namespace,new Metadata());
+    this.#metadata.get(namespace).parseFile(fullPath).then((metadata)=>{
       this.emit("fileParsed", metadata, namespace);
-      if(--this[_].fileCount <= 0){
+      if(--this.#fileCount <= 0){
         onComplete();
       }
     });
@@ -89,8 +79,8 @@ module.exports = class Collector extends EventEmitter {
    * @param {string} fullPath
    */
   collectFromPath(fullPath, onComplete, onError=(err)=>{console.error(err);}){
-    if(this[_].filePath ===''){
-      this[_].filePath = fullPath;
+    if(this.filePath ===''){
+      this.filePath = fullPath;
     }
     // Does the path point to a file or a directory?
     if(isJsFile.test(fullPath)){
@@ -98,15 +88,15 @@ module.exports = class Collector extends EventEmitter {
     } else {
       // directory
       // decrement the fileCount for the current subpath, if this is a subpath and not the base.
-      if(this[_].fileCount !== 0){
-        this[_].fileCount--;
+      if(this.#fileCount !== 0){
+        this.#fileCount--;
       }
       fs.readdir(fullPath, (err, subpaths)=>{
         if(err){
           onError(err);
         }
         // add the subpath count to the filecount. when fileCount is 0, then all files are considered complete.
-        this[_].fileCount += subpaths.length;
+        this.#fileCount += subpaths.length;
         for(let subpath of subpaths){
           this.collectFromPath(path.join(fullPath,subpath), onComplete, onError);
         }
@@ -116,11 +106,11 @@ module.exports = class Collector extends EventEmitter {
 
   /**
    * Start the collection process and get a promise
-   * @return {Promise<any>}
+   * @return {Promise<*>}
    */
   collect(){
     return new Promise((resolve, reject)=>{
-      this.collectFromPath(this[_].filePath, resolve, reject);
+      this.collectFromPath(this.filePath, resolve, reject);
     });
   }
 };

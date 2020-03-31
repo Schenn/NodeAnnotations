@@ -1,7 +1,6 @@
 const Annotation = require("./Annotation");
 
 const annotationPhraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
-const _ = Symbol("private");
 
 
 /**
@@ -11,22 +10,24 @@ const _ = Symbol("private");
  */
 module.exports = class DocBlock {
 
+  #name = '';
+  #type = '';
+  #extends = '';
+  #annotations = null;
+  #comment = '';
+
+  readOnly = false;
+
   constructor(type='', comment = ''){
-    this[_] = {
-      name: '',
-      type: type,
-      extends: '',
-      readOnly: false,
-      annotations: {},
-      comment:''
-    };
+    this.#type = type;
+    this.#annotations = new Map();
     if(comment !== ''){
       this.comment = comment;
     }
   }
 
   [Symbol.iterator]() {
-    let annotationKeys = Object.keys(this[_].annotations);
+    let annotationKeys = this.#annotations.keys();
     let keyStep = 0;
     let annotationStep = 0;
     /**
@@ -34,26 +35,24 @@ module.exports = class DocBlock {
      * @return {*}
      */
     let next = ()=>{
+      let retValue = {value: undefined, done: false};
       // If we haven't reached the end of the annotation keys
       if(keyStep < annotationKeys.length){
         let key = annotationKeys[keyStep];
         // If the step through the annotations hasn't already reached the end of the collection
-        if(annotationStep < this[_].annotations[key].length){
-          let annotation = this[_].annotations[key][annotationStep];
+        if(annotationStep < this.#annotations.get(key).length){
+          retValue.value = this.#annotations.get(key)[annotationStep];
           // If the next annotation step would reach the end of the collection,
           //  reset the annotation step and advance the keystep
-          if(++annotationStep >= this[_].annotations[key].length){
-            annotationStep = 0;
-            keyStep++;
-          }
-          return {value: annotation, done: false};
-        } else {
+        }
+        if(++annotationStep >= this.#annotations.get(key).length){
           annotationStep = 0;
           keyStep++;
         }
       } else {
-        return {value: undefined, done: true};
+        retValue.done = true;
       }
+      return retValue;
     };
     return {
       next:next.bind(this)
@@ -65,7 +64,7 @@ module.exports = class DocBlock {
    * @return {string}
    */
   get comment(){
-    return this[_].comment;
+    return this.#comment;
   }
 
   /**
@@ -74,8 +73,8 @@ module.exports = class DocBlock {
    * @param {string} text
    */
   set comment(text){
-    if(this[_].comment === ''){
-      this[_].comment = text;
+    if(this.#comment === ''){
+      this.#comment = text;
       let annotationMatches = text.match(annotationPhraseRegex);
       if(annotationMatches){
         for (let expression of annotationMatches){
@@ -86,31 +85,23 @@ module.exports = class DocBlock {
   }
 
   get name(){
-    return this[_].name;
+    return this.#name;
   }
 
   get type(){
-    return this[_].type;
+    return this.#type;
   }
 
   get extends(){
-    return this[_].extends;
-  }
-
-  get readOnly(){
-    return this[_].readOnly;
-  }
-
-  set readOnly(mutable){
-    this[_].readOnly = mutable;
+    return this.#classExtends;
   }
 
   forBlock(...args){
-    this[_].name = args[0];
-    if(this[_].type === "class"){
-      this[_].extends = args[1];
-    } else if(this[_].type === "property"){
-      this[_].readOnly = args[1] === 'get';
+    this.#name = args[0];
+    if(this.#type === "class"){
+      this.#classExtends = args[1];
+    } else if(this.#type === "property"){
+      this.readOnly = args[1] === 'get';
     }
   }
 
@@ -120,7 +111,7 @@ module.exports = class DocBlock {
    * @return {boolean}
    */
   hasAnnotations(){
-    return Object.keys(this[_].annotations).length > 0;
+    return this.#annotations.size > 0;
   }
 
   /**
@@ -130,7 +121,7 @@ module.exports = class DocBlock {
    * @return {boolean}
    */
   hasAnnotation(annotation){
-    return typeof this[_].annotations[annotation] !== "undefined";
+    return typeof this.#annotations.get(annotation) !== "undefined";
   }
 
   /**
@@ -144,10 +135,10 @@ module.exports = class DocBlock {
   addAnnotation(name, value=null, type=null){
     let annotation = new Annotation();
     annotation.fromValues(name, value, type);
-    if(typeof this[_].annotations[annotation.name] === "undefined"){
-      this[_].annotations[annotation.name] = [];
+    if(typeof this.#annotations.get(annotation.name) === "undefined"){
+      this.#annotations.set(annotation.name,[]);
     }
-    this[_].annotations[annotation.name].push(annotation);
+    this.#annotations.get(annotation.name).push(annotation);
   }
 
   /**
@@ -159,10 +150,10 @@ module.exports = class DocBlock {
    */
   annotationFromPhrase(expression){
     let annotation = new Annotation(expression.trim());
-    if(typeof this[_].annotations[annotation.name] === "undefined"){
-      this[_].annotations[annotation.name] = [];
+    if(typeof this.#annotations.get(annotation.name) === "undefined"){
+      this.#annotations.set(annotation.name, []);
     }
-    this[_].annotations[annotation.name].push(annotation);
+    this.#annotations.get(annotation.name).push(annotation);
   }
 
   /**
@@ -172,7 +163,7 @@ module.exports = class DocBlock {
    * @return {Annotation}
    */
   getAnnotation(annotation){
-    return typeof this[_].annotations[annotation] !== "undefined" ? this[_].annotations[annotation] : [];
+    return typeof this.#annotations.get(annotation) !== "undefined" ? this.#annotations.get(annotation) : [];
   }
 
   /**
@@ -181,6 +172,8 @@ module.exports = class DocBlock {
    * @return {null | string}
    */
   getFirstAnnotationValue(annotation){
-    return typeof this[_].annotations[annotation] !== "undefined" ? this[_].annotations[annotation][0].value : null;
+    return typeof this.#annotations.get(annotation) !== "undefined" ?
+      this.#annotations.get(annotation)[0].value :
+      null;
   }
 };
