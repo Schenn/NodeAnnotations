@@ -23,6 +23,15 @@ module.exports = class Collector extends EventEmitter {
     this.#metadata = new Map();
   }
 
+  [Symbol.iterator]() {
+    let meta = this.#metadata.entries();
+    const nextMeta = ()=>{
+      return meta.next().value;
+    };
+
+    return {next: nextMeta};
+  }
+
   /**
    * The namespaces (relative file paths) of the classes that were memoized.
    *
@@ -62,7 +71,7 @@ module.exports = class Collector extends EventEmitter {
       .replace(".js", "");
 
     // file
-    this.#metadata.set(namespace,new Metadata());
+    this.#metadata.set(namespace, new Metadata());
     this.#metadata.get(namespace).parseFile(fullPath).then((metadata)=>{
       this.emit("fileParsed", metadata, namespace);
       if(--this.#fileCount <= 0){
@@ -82,11 +91,13 @@ module.exports = class Collector extends EventEmitter {
     if(this.filePath ===''){
       this.filePath = fullPath;
     }
-    // Does the path point to a file or a directory?
-    if(isJsFile.test(fullPath)){
+    let pathStats = fs.lstatSync(fullPath);
+
+    // Does the path point to a js file or a directory?
+    if(pathStats.isFile() && isJsFile.test(fullPath)){
       this.collectFromFile(fullPath, onComplete);
-    } else {
-      // directory
+    } else if(pathStats.isDirectory()) {
+      // directory or ignored file.
       // decrement the fileCount for the current subpath, if this is a subpath and not the base.
       if(this.#fileCount !== 0){
         this.#fileCount--;
@@ -101,6 +112,9 @@ module.exports = class Collector extends EventEmitter {
           this.collectFromPath(path.join(fullPath,subpath), onComplete, onError);
         }
       });
+    } else {
+      // ignore it.
+      this.#fileCount--;
     }
   }
 
