@@ -33,6 +33,7 @@ function testPhraseA(){
   // When there's no annotation found
   assert.strictEqual(docblockA.getAnnotation("type").length, 0, "Failed to get appropriate number of param annotations.");
   assert.strictEqual(docblockA.getAnnotation("foo").length, 1, "Failed to get appropriate number of param annotations.");
+
 }
 
 
@@ -59,6 +60,7 @@ function testIteration(){
     }
     i++;
   }
+  assert.strictEqual(i, 3, "Failed to get appropriate number of annotations while iterating through docblock.");
 }
 
 function runTest() {

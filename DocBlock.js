@@ -27,7 +27,7 @@ module.exports = class DocBlock {
   }
 
   [Symbol.iterator]() {
-    let annotationKeys = this.#annotations.keys();
+    let annotationKeys = Array.from(this.#annotations.keys());
     let keyStep = 0;
     let annotationStep = 0;
     /**
@@ -37,7 +37,7 @@ module.exports = class DocBlock {
     let next = ()=>{
       let retValue = {value: undefined, done: false};
       // If we haven't reached the end of the annotation keys
-      if(keyStep < annotationKeys.length){
+      if(keyStep < this.#annotations.size){
         let key = annotationKeys[keyStep];
         // If the step through the annotations hasn't already reached the end of the collection
         if(annotationStep < this.#annotations.get(key).length){
@@ -93,13 +93,13 @@ module.exports = class DocBlock {
   }
 
   get extends(){
-    return this.#classExtends;
+    return this.#extends;
   }
 
   forBlock(...args){
     this.#name = args[0];
     if(this.#type === "class"){
-      this.#classExtends = args[1];
+      this.#extends = args[1];
     } else if(this.#type === "property"){
       this.readOnly = args[1] === 'get';
     }
