@@ -64,6 +64,8 @@ module.exports = class Collector extends EventEmitter {
   /**
    * Create a metadata for a given file.
    *
+   * Left this method in here for backwards compatibility,
+   *  collectFromPath now uses the collectFromFileAsync method instead.
    * @param {string} fullPath
    */
   collectFromFile(fullPath, onComplete){
@@ -82,6 +84,24 @@ module.exports = class Collector extends EventEmitter {
   }
 
   /**
+   * Use a Promise instead of a callback or event
+   *
+   * @see Collector.collectFromFile
+   * @param fullPath
+   * @return {Promise<Metadata>}
+   */
+  collectFromFileAsync(fullPath){
+    let namespace = fullPath.replace(path.join(process.cwd(), this.filePath), "")
+      .replace(".js", "");
+    return new Promise((resolve, reject)=>{
+      this.#metadata.set(namespace, new Metadata());
+      this.#metadata.get(namespace).parseFile(fullPath).then((metadata)=>{
+        resolve(metadata, namespace);
+      }).catch(reject);
+    });
+  }
+
+  /**
    * Collect all the files from a directory (and any subdirectories).
    *  Each file is then passed to collectFromFile which memoizes the class details in a Metadata class.
    *
@@ -95,7 +115,12 @@ module.exports = class Collector extends EventEmitter {
 
     // Does the path point to a js file or a directory?
     if(pathStats.isFile() && isJsFile.test(fullPath)){
-      this.collectFromFile(fullPath, onComplete);
+      this.collectFromFileAsync(fullPath).then((metadata, namespace)=>{
+        this.emit("fileParsed", metadata, namespace);
+        if(--this.#fileCount <= 0){
+          onComplete();
+        }
+      });
     } else if(pathStats.isDirectory()) {
       // directory or ignored file.
       // decrement the fileCount for the current subpath, if this is a subpath and not the base.
@@ -127,4 +152,6 @@ module.exports = class Collector extends EventEmitter {
       this.collectFromPath(this.filePath, resolve, reject);
     });
   }
+
+
 };
