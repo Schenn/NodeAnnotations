@@ -50,6 +50,13 @@ module.exports = class Collector extends EventEmitter {
     return this.#metadata;
   }
 
+  namespaceFromPath(fullPath){
+    if(fullPath === ""){
+      fullPath = this.filePath;
+    }
+    return fullPath.replace(path.join(process.cwd(), this.filePath), "")
+      .replace(".js", "");
+  }
 
   /**
    * Get the metadata for a given namespace.
@@ -67,10 +74,11 @@ module.exports = class Collector extends EventEmitter {
    * Left this method in here for backwards compatibility,
    *  collectFromPath now uses the collectFromFileAsync method instead.
    * @param {string} fullPath
+   * @param {function} onComplete
+   * @param {function} onError
    */
-  collectFromFile(fullPath, onComplete){
-    let namespace = fullPath.replace(path.join(process.cwd(), this.filePath), "")
-      .replace(".js", "");
+  collectFromFile(fullPath, onComplete, onError=((e)=>{console.log(e);})){
+    let namespace = this.namespaceFromPath(fullPath);
 
     // file
     this.#metadata.set(namespace, new Metadata());
@@ -79,7 +87,7 @@ module.exports = class Collector extends EventEmitter {
       if(--this.#fileCount <= 0){
         onComplete();
       }
-    });
+    }).catch(onError);
 
   }
 
@@ -91,12 +99,11 @@ module.exports = class Collector extends EventEmitter {
    * @return {Promise<Metadata>}
    */
   collectFromFileAsync(fullPath){
-    let namespace = fullPath.replace(path.join(process.cwd(), this.filePath), "")
-      .replace(".js", "");
     return new Promise((resolve, reject)=>{
+      let namespace = this.namespaceFromPath(fullPath);
       this.#metadata.set(namespace, new Metadata());
       this.#metadata.get(namespace).parseFile(fullPath).then((metadata)=>{
-        resolve(metadata, namespace);
+        resolve(metadata);
       }).catch(reject);
     });
   }
@@ -106,17 +113,16 @@ module.exports = class Collector extends EventEmitter {
    *  Each file is then passed to collectFromFile which memoizes the class details in a Metadata class.
    *
    * @param {string} fullPath
+   * @param {function} onComplete
+   * @param {function} onError
    */
   collectFromPath(fullPath, onComplete, onError=(err)=>{console.error(err);}){
-    if(this.filePath ===''){
-      this.filePath = fullPath;
-    }
     let pathStats = fs.lstatSync(fullPath);
 
     // Does the path point to a js file or a directory?
     if(pathStats.isFile() && isJsFile.test(fullPath)){
-      this.collectFromFileAsync(fullPath).then((metadata, namespace)=>{
-        this.emit("fileParsed", metadata, namespace);
+      this.collectFromFileAsync(fullPath).then((metadata)=>{
+        this.emit("fileParsed", metadata, this.namespaceFromPath(fullPath));
         if(--this.#fileCount <= 0){
           onComplete();
         }
@@ -152,6 +158,5 @@ module.exports = class Collector extends EventEmitter {
       this.collectFromPath(this.filePath, resolve, reject);
     });
   }
-
 
 };

@@ -20,6 +20,7 @@ let successTimeout = setTimeout(()=>{
  * Validate the collector is able to pull the metadata for class files.
  */
 function collectorTest () {
+
   /**
    * Set the event before collecting metadata.
    */
@@ -27,6 +28,8 @@ function collectorTest () {
     assert.ok(++mockCount <= 3, "Too many mocks");
     assert.strictEqual(Object.keys(metadata.methods).length, 4);
     assert.strictEqual(metadata.propertyData.length, 2);
+    assert.ok(metadata, "Failed to get metadata after parsing.");
+    assert.ok(namespace, "Failed to get namespace after parsing.");
   });
 
   /**

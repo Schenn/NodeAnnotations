@@ -3,5 +3,3 @@ Classes now have private and public properties in js.
 
 JS is adding its own decorators, which are different than annotations.
     - Refactor metadata parser to also identify the new decorators as annotations.
-    
-Add alternative methods where callbacks are used which return promises instead.
