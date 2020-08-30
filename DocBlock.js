@@ -1,4 +1,4 @@
-const Annotation = require("./Annotation");
+import {Annotation} from "./Annotation";
 
 const annotationPhraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
 
@@ -8,7 +8,7 @@ const annotationPhraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
  *
  * @type {DocBlock}
  */
-module.exports = class DocBlock {
+export class DocBlock {
 
   #name = '';
   #type = '';
@@ -135,6 +135,13 @@ module.exports = class DocBlock {
   addAnnotation(name, value=null, type=null){
     let annotation = new Annotation();
     annotation.fromValues(name, value, type);
+    // if name has /, then split on / and do the following:
+    //    if key path does not exist
+    //    annotations.set(firstPhrase, {secondPhrase: {each nested phrase})
+    //    annotations.get(firstPhrase)[secondPhrase][etc].lastPhrase = [];
+    //
+    //    annotations.get(firstPhrase)[secondPhrase][thirdPhrase].lastPhrase.push(annotation);
+    //
     if(typeof this.#annotations.get(annotation.name) === "undefined"){
       this.#annotations.set(annotation.name,[]);
     }
@@ -176,4 +183,4 @@ module.exports = class DocBlock {
       this.#annotations.get(annotation)[0].value :
       null;
   }
-};
+}

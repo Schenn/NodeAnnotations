@@ -7,9 +7,9 @@ let privateProps = {
 /**
  * A class to validate the Node Annotations library against.
  *
- * @type {module.Mock}
+ * @type {Mock}
  */
-module.exports = class Mock {
+export class Mock {
 
   constructor(){
 
@@ -112,4 +112,4 @@ module.exports = class Mock {
   deconstructedMethod(bar, {foo}){
     doThing();
   }
-};
+}

@@ -1,7 +1,8 @@
-const fs = require("fs");
-const path = require("path");
-const Metadata = require("./Metadata");
-const EventEmitter = require('events');
+import fs from "fs";
+import path from"path";
+import EventEmitter from 'events';
+
+import {Metadata} from "./Metadata";
 
 // Does the phrase end in .js
 const isJsFile = /\.js$/;
@@ -11,7 +12,7 @@ const isJsFile = /\.js$/;
  *
  * @type {Collector}
  */
-module.exports = class Collector extends EventEmitter {
+export class Collector extends EventEmitter {
 
   #metadata = null;
   #fileCount = 0;
@@ -159,4 +160,4 @@ module.exports = class Collector extends EventEmitter {
     });
   }
 
-};
+}

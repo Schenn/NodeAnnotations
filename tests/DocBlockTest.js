@@ -1,6 +1,6 @@
-const path = require("path");
-const assert = require("assert");
-const DocBlock = require("../DocBlock");
+import path from "path";
+import assert from "assert";
+import DocBlock from "../DocBlock";
 
 const docBlockPhraseA = `/**
  *

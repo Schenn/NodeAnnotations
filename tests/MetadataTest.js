@@ -1,7 +1,7 @@
-const Metadata = require("../Metadata");
-const Mock = require("./mocks/Mock");
-const path = require("path");
-const assert = require("assert");
+import Metadata from "../Metadata";
+import Mock from "./mocks/Mock";
+import path from "path";
+import assert from "assert";
 
 // for testing we only need one.
 const mock = new Mock();

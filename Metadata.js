@@ -1,6 +1,5 @@
-const fs = require("fs");
-const DocBlock = require("./DocBlock");
-const { createRequireFromPath } = require("module");
+import fs from "fs";
+import {DocBlock} from "./DocBlock";
 
 // Find the index of the next docblock.
 const nextComment = (fileContent, from)=>{
@@ -8,7 +7,7 @@ const nextComment = (fileContent, from)=>{
 };
 
 // class {name} [extends name]  // index 1 is class name, index 3 is the class it extends
-const classRegex = /^\s*(?:\*\/)\s*(?:module.exports\s?=\s?)?class\s([A-z]+)((?:\sextends\s)([A-z]+))?\s*{\s*$/m;
+const classRegex = /^\s*(?:\*\/)\s*(?:(module.exports\s?=\s?|export\s))?class\s([A-z]+)((?:\sextends\s)([A-z]+))?\s*{\s*$/m;
 // */\n methodName[ ](prop, {prop}, ...prop, prop=1, prop="foo", prop='bar')[ \n]{
 const methodRegex = /^\s*(?:\*\/)\s*([A-z]+)(?:\s?\([^/)]*\)\s?)\n?\s*{/gm;
 // */\n set|get propName ([value])[ \n]{  only collects properties which follow a comment block
@@ -24,7 +23,7 @@ const commentClose = '*/';
  *    what methods and what properties the class has.
  * @type {Metadata}
  */
-module.exports = class Metadata {
+export class Metadata {
   #fileName = "";
   #className = "";
   #classExtends = "";
@@ -269,4 +268,17 @@ module.exports = class Metadata {
       cb(this);
     }
   }
-};
+
+  /**
+   * Return all the docblocks which have a matching annotation
+   * @param annotation
+   */
+  blocksWithAnnotation(annotation){
+    let blocks = [];
+    for(let {docblock} of this){
+      if(docblock.hasAnnotation(annotation)){
+        blocks.push(annotation);
+      }
+    }
+  }
+}

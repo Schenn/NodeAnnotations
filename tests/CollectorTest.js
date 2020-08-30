@@ -1,6 +1,6 @@
-const path = require("path");
-const assert = require("assert");
-const Collector = require("../Collector");
+import path from "path";
+import assert from "assert";
+import Collector from "../Collector";
 // path to the mock classes
 let mockPath = path.join(process.cwd(), "mocks");
 

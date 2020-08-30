@@ -1,5 +1,5 @@
-const Annotation = require("../Annotation");
-const assert = require("assert");
+import Annotation from "../Annotation";
+import assert from"assert";
 const phraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
 
 const annotationPhraseA = `/**
