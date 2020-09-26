@@ -1,7 +1,7 @@
-import Annotation from "./Annotation";
-import Collector from "./Collector";
-import DocBlock from "./DocBlock";
-import Metadata from "./Metadata";
+const Annotation = require("./Annotation");
+const Collector = require("./Collector");
+const DocBlock = require("./DocBlock");
+const Metadata = require("./Metadata");
 
 export const {
     Annotation: Annotation,

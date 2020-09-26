@@ -1,5 +1,5 @@
-import fs from "fs";
-import {DocBlock} from "./DocBlock";
+const fs = require("fs");
+const DocBlock = require("./DocBlock");
 
 // Find the index of the next docblock.
 const nextComment = (fileContent, from)=>{
@@ -37,7 +37,7 @@ export class Metadata {
   [Symbol.iterator]() {
     let docStep = 0;
     let methods = this.methods;
-    let properties = this.propertyData;
+    let properties = Object.keys(this.propertyData);
     let methodStage = properties.length; // would be -1, but classDoc is first, which negates the -1
     let phaseStep = 0;
     let next = ()=>{
@@ -119,10 +119,10 @@ export class Metadata {
 
   /**
    * Get the names of the properties which have been memorized
-   * @return {string[]}
+   * @return {Map}
    */
   get propertyData(){
-    return Object.keys(this.#propertyData);
+    return this.#propertyData;
   }
 
   /**
@@ -282,3 +282,5 @@ export class Metadata {
     }
   }
 }
+
+module.exports = Metadata;

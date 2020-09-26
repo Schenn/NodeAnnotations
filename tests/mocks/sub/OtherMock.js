@@ -8,7 +8,7 @@ let privateProps = {
  *
  * @type {Mock}
  */
-export class OtherMock {
+class OtherMock {
 
   constructor(){
 
@@ -105,3 +105,5 @@ export class OtherMock {
     doThing();
   }
 }
+
+module.exports = OtherMock;

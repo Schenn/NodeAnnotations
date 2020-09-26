@@ -9,7 +9,7 @@ let privateProps = {
  *
  * @type {Mock}
  */
-export class Mock {
+class Mock {
 
   constructor(){
 
@@ -113,3 +113,5 @@ export class Mock {
     doThing();
   }
 }
+
+module.exports = Mock;

@@ -6,7 +6,7 @@ const phraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)/g;
  *  An annotation string looks like
  * @type {module.Annotation}
  */
-export class Annotation {
+class Annotation {
 
   #phrase = '';
   #nodes = {
@@ -95,3 +95,5 @@ export class Annotation {
     return this.#nodes.value;
   }
 }
+
+module.exports = Annotation;

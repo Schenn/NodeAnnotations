@@ -1,4 +1,4 @@
-import {Annotation} from "./Annotation";
+const Annotation = require("./Annotation");
 
 const annotationPhraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
 
@@ -8,7 +8,7 @@ const annotationPhraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
  *
  * @type {DocBlock}
  */
-export class DocBlock {
+class DocBlock {
 
   #name = '';
   #type = '';
@@ -184,3 +184,5 @@ export class DocBlock {
       null;
   }
 }
+
+module.exports = DocBlock;
