@@ -23,7 +23,7 @@ const commentClose = '*/';
  *    what methods and what properties the class has.
  * @type {Metadata}
  */
-export class Metadata {
+class Metadata {
   #fileName = "";
   #className = "";
   #classExtends = "";
