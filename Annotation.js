@@ -1,19 +1,17 @@
-// \s*\s@word[\s{typeInfo}][\swordorcharacters]$
-const phraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)/g;
+// \s*\s@word[\s{typeInfo}][\swordorcharacters]$ If there's a new line right after the anno name, then set reference
+const phraseRegex = /(?:\s*\*\s*)(?<anno>@\w+)\s*(?:{(?<type>[^}]+)} *)?(?:(?<rest>.*))?$/;
 
 /**
  * Annotation wraps the individual elements of an annotation string.
  *  An annotation string looks like
- * @type {module.Annotation}
+ * @type {Annotation}
  */
 class Annotation {
 
-  #phrase = '';
-  #nodes = {
-    name: "",
-    type: "",
-    value: ""
-  };
+  #name= "";
+  #type= "";
+  #value= "";
+  for="";
 
   constructor(expression = ''){
     if(expression !== ''){
@@ -22,17 +20,10 @@ class Annotation {
   }
 
   set expression(expression){
-    this.#phrase = expression.match(phraseRegex)[0].replace("*", "").trim();
-    this.#nodes.name = expression.match(/(@\w+)/)[0].replace("@", "");
-    let typeMatch = this.#phrase.match(/({.+})/);
-    this.#nodes.value = this.#phrase.replace(`@${this.#nodes.name}`, '').trim();
-    if(typeMatch){
-      this.#nodes.value = this.#nodes.value.replace(typeMatch[0], '').trim();
-    }
-
-    this.#nodes.type = (typeMatch) ?
-      typeMatch[0].replace("{", '').replace("}", '') :
-      '';
+    let phrase = phraseRegex.exec(expression);
+    this.#name = phrase.groups.anno.replace("@", "").trim();
+    this.#type = phrase.groups.type ? phrase.groups.type.trim() : '';
+    this.#value = phrase.groups.rest ? phrase.groups.rest.trim() : '';
   }
 
   /**
@@ -44,9 +35,9 @@ class Annotation {
    */
   fromValues(name, value=null, type=null){
     this.#phrase = `@${name}${type ? ` {${type}} `: ''}${value ? ` ${value}` : ''}`;
-    this.#nodes.name = name;
-    this.#nodes.value = value;
-    this.#nodes.type = type;
+    this.#name = name;
+    this.#value = value;
+    this.#type = type;
   }
 
   /**
@@ -63,7 +54,7 @@ class Annotation {
    * @return {*|string|string}
    */
   get phrase(){
-    return this.#phrase;
+    return `${this.name} ${this.type} ${this.value} For: ${this.for}`;
   }
 
   /**
@@ -72,7 +63,7 @@ class Annotation {
    * @return {string}
    */
   get name(){
-    return this.#nodes.name;
+    return this.#name;
   }
 
   /**
@@ -82,7 +73,7 @@ class Annotation {
    * @return {string}
    */
   get type(){
-    return this.#nodes.type;
+    return this.#type;
   }
 
   /**
@@ -92,7 +83,7 @@ class Annotation {
    * @return {string}
    */
   get value(){
-    return this.#nodes.value;
+    return this.#value;
   }
 }
 

@@ -1,23 +1,23 @@
 const Annotation = require("../Annotation");
 const assert = require("assert");
-const phraseRegex = /^(?:\s*\*\s*)(@\w+)(.*)$/gm;
+const phraseRegex = /^\s*\*\s*@\w+.*$/gm;
 
-const annotationPhraseA = `/**
+const annotationPhraseA = `
  *
  * @type {module.Mock}`;
 
-const annotationPhraseB = `/**
+const annotationPhraseB = `
  * @type {string}
  * @test
 `;
 
-const spacingPhrase = `/**
+const spacingPhrase = `
     *    @type {string} 
     *  @test
   * @phrase value value value
 `;
 
-const specialCharacterPhrase = `/**
+const specialCharacterPhrase = `
  *
  * @param /
  * @param !phrase
@@ -67,11 +67,11 @@ function testSpecialChars(){
   assert.equal(4, specialMatches.length);
   let slash = new Annotation(specialMatches[0]);
   assert.equal("/", slash.value);
-  let notPhrase = new Annotation(specialMatches[1]);
+  let notPhrase = new Annotation(specialMatches[1].trimStart());
   assert.equal("!phrase", notPhrase.value);
-  let expression = new Annotation(specialMatches[2]);
+  let expression = new Annotation(specialMatches[2].trimStart());
   assert.equal("a+b", expression.value);
-  let namespace = new Annotation(specialMatches[3]);
+  let namespace = new Annotation(specialMatches[3].trimStart());
   assert.equal("path/to/class", namespace.type);
 }
 
